@@ -1,0 +1,26 @@
+[general]
+dirs = ["templates"]
+
+[[filters]]
+name = "title"
+path = "crate::filters::title"
+
+[[filters]]
+name = "replace"
+path = "crate::filters::replace"
+
+[[filters]]
+name = "date"
+path = "crate::filters::date"
+
+[[filters]]
+name = "display_optional"
+path = "crate::filters::display_optional"
+
+[[filters]]
+name = "is_empty"
+path = "crate::filters::is_empty"
+
+[[filters]]
+name = "contains"
+path = "crate::filters::contains"

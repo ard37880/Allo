@@ -1,0 +1,405 @@
+{% extends "base.html" %}
+
+{% block title %}CRM Dashboard - Allo{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center space-x-8">
+                    <a href="/dashboard" class="text-xl font-semibold text-gray-900">Allo</a>
+                    <div class="flex space-x-4">
+                        <a href="/crm" class="text-indigo-600 font-medium">CRM</a>
+                        <a href="/crm/customers" class="text-gray-500 hover:text-gray-700">Customers</a>
+                        <a href="/crm/deals" class="text-gray-500 hover:text-gray-700">Deals</a>
+                        <a href="/crm/activities" class="text-gray-500 hover:text-gray-700">Activities</a>
+                        <a href="/crm/reports" class="text-gray-500 hover:text-gray-700">Reports</a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="/dashboard" class="text-gray-500 hover:text-gray-700">← Back to Dashboard</a>
+                    <form action="/logout" method="POST" class="inline">
+                        <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700">
+                            Logout
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">CRM Dashboard</h1>
+            <p class="mt-2 text-gray-600">Manage your customer relationships and sales pipeline</p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+                                <span class="text-white font-bold">🏢</span>
+                            </div>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Total Customers</dt>
+                                <dd class="text-3xl font-bold text-gray-900">{{ customer_count }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-5 py-3">
+                    <div class="text-sm">
+                        <a href="/crm/customers" class="font-medium text-indigo-600 hover:text-indigo-500">
+                            View all customers →
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
+                                <span class="text-white font-bold">💼</span>
+                            </div>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Active Deals</dt>
+                                <dd class="text-3xl font-bold text-gray-900">{{ deal_count }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-5 py-3">
+                    <div class="text-sm">
+                        <a href="/crm/deals" class="font-medium text-indigo-600 hover:text-indigo-500">
+                            View pipeline →
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-yellow-500 rounded-md flex items-center justify-center">
+                                <span class="text-white font-bold">💰</span>
+                            </div>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Pipeline Value</dt>
+                                <dd class="text-3xl font-bold text-gray-900">{{ total_deal_value }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-5 py-3">
+                    <div class="text-sm">
+                        <a href="/crm/reports" class="font-medium text-indigo-600 hover:text-indigo-500">
+                            View reports →
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="bg-white shadow rounded-lg mb-8">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">Quick Actions</h3>
+                <p class="text-sm text-gray-500 mt-1">Common tasks and shortcuts</p>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <a href="/crm/customers/new" 
+                       class="bg-blue-600 text-white px-4 py-3 rounded-md text-center hover:bg-blue-700 transition-colors">
+                        <div class="text-lg font-semibold">Add Customer</div>
+                        <div class="text-sm opacity-90">Create new customer record</div>
+                    </a>
+                    <a href="/crm/deals/new" 
+                       class="bg-green-600 text-white px-4 py-3 rounded-md text-center hover:bg-green-700 transition-colors">
+                        <div class="text-lg font-semibold">Create Deal</div>
+                        <div class="text-sm opacity-90">Start new sales opportunity</div>
+                    </a>
+                    <a href="/crm/activities/new" 
+                       class="bg-purple-600 text-white px-4 py-3 rounded-md text-center hover:bg-purple-700 transition-colors">
+                        <div class="text-lg font-semibold">Log Activity</div>
+                        <div class="text-sm opacity-90">Record customer interaction</div>
+                    </a>
+                    <a href="/crm/reports" 
+                       class="bg-gray-600 text-white px-4 py-3 rounded-md text-center hover:bg-gray-700 transition-colors">
+                        <div class="text-lg font-semibold">View Reports</div>
+                        <div class="text-sm opacity-90">Analyze performance data</div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Recent Activities -->
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900">Recent Activities</h3>
+                        <p class="text-sm text-gray-500">Latest customer interactions</p>
+                    </div>
+                    <a href="/crm/activities" class="text-indigo-600 hover:text-indigo-500 text-sm font-medium">
+                        View all
+                    </a>
+                </div>
+                <div class="divide-y divide-gray-200 max-h-96 overflow-y-auto">
+                    {% if recent_activities.len() == 0 %}
+                    <div class="p-6 text-center text-gray-500">
+                        <div class="text-gray-400 text-4xl mb-2">📝</div>
+                        <p class="text-sm">No recent activities</p>
+                        <p class="text-xs text-gray-400 mt-1">Start by logging customer interactions</p>
+                        <a href="/crm/activities/new" 
+                           class="mt-3 inline-block bg-indigo-600 text-white px-3 py-1 rounded text-sm hover:bg-indigo-700">
+                            Log First Activity
+                        </a>
+                    </div>
+                    {% else %}
+                    {% for activity in recent_activities %}
+                    <div class="p-4 hover:bg-gray-50">
+                        <div class="flex items-start space-x-3">
+                            <div class="flex-shrink-0">
+                                {% if activity.activity_type == "call" %}
+                                <span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-blue-100 text-blue-800">
+                                    📞
+                                </span>
+                                {% else if activity.activity_type == "meeting" %}
+                                <span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-green-100 text-green-800">
+                                    🤝
+                                </span>
+                                {% else if activity.activity_type == "email" %}
+                                <span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-purple-100 text-purple-800">
+                                    ✉️
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-gray-100 text-gray-800">
+                                    📝
+                                </span>
+                                {% endif %}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between">
+                                    <p class="text-sm font-medium text-gray-900 truncate">{{ activity.subject }}</p>
+                                    {% if activity.completed %}
+                                    <span class="inline-flex px-2 py-0.5 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                                        ✓ Done
+                                    </span>
+                                    {% else %}
+                                    <span class="inline-flex px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
+                                        ⏳ Pending
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                {% if activity.description != "" %}
+                                <p class="mt-1 text-sm text-gray-600 truncate">{{ activity.description }}</p>
+                                {% endif %}
+                                <div class="mt-1 flex items-center space-x-3 text-xs text-gray-500">
+                                    <span class="capitalize">{{ activity.activity_type }}</span>
+                                    <span>{{ activity.activity_date }}</span>
+                                    {% if activity.duration_minutes != "" %}
+                                    <span>{{ activity.duration_minutes }} min</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                </div>
+                {% if recent_activities.len() > 0 %}
+                <div class="px-6 py-3 bg-gray-50">
+                    <a href="/crm/activities" class="text-sm text-indigo-600 hover:text-indigo-500 font-medium">
+                        View all activities →
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Sales Pipeline Overview -->
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900">Sales Pipeline</h3>
+                        <p class="text-sm text-gray-500">Deal stages breakdown</p>
+                    </div>
+                    <a href="/crm/deals" class="text-indigo-600 hover:text-indigo-500 text-sm font-medium">
+                        View all
+                    </a>
+                </div>
+                <div class="p-6">
+                    {% if deal_count == 0 %}
+                    <div class="text-center text-gray-500">
+                        <div class="text-gray-400 text-4xl mb-2">💼</div>
+                        <p class="text-sm">No deals in pipeline</p>
+                        <p class="text-xs text-gray-400 mt-1">Start tracking sales opportunities</p>
+                        <a href="/crm/deals/new" 
+                           class="mt-3 inline-block bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
+                            Create First Deal
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="space-y-4">
+                        <!-- Pipeline Stage: Prospect -->
+                        <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+                                <span class="text-sm font-medium text-gray-900">Prospect</span>
+                            </div>
+                            <div class="text-sm text-gray-600">
+                                <span class="font-medium">0</span> deals • <span class="font-medium">$0</span>
+                            </div>
+                        </div>
+
+                        <!-- Pipeline Stage: Negotiation -->
+                        <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                                <span class="text-sm font-medium text-gray-900">Negotiation</span>
+                            </div>
+                            <div class="text-sm text-gray-600">
+                                <span class="font-medium">0</span> deals • <span class="font-medium">$0</span>
+                            </div>
+                        </div>
+
+                        <!-- Pipeline Stage: Closed Won -->
+                        <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                                <span class="text-sm font-medium text-gray-900">Closed Won</span>
+                            </div>
+                            <div class="text-sm text-gray-600">
+                                <span class="font-medium">0</span> deals • <span class="font-medium">$0</span>
+                            </div>
+                        </div>
+
+                        <!-- Pipeline Stage: Closed Lost -->
+                        <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                                <span class="text-sm font-medium text-gray-900">Closed Lost</span>
+                            </div>
+                            <div class="text-sm text-gray-600">
+                                <span class="font-medium">0</span> deals • <span class="font-medium">$0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-4 border-t border-gray-200">
+                        <div class="flex justify-between text-sm">
+                            <span class="font-medium text-gray-900">Total Pipeline Value:</span>
+                            <span class="font-bold text-indigo-600">{{ total_deal_value }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% if deal_count > 0 %}
+                <div class="px-6 py-3 bg-gray-50">
+                    <a href="/crm/deals" class="text-sm text-indigo-600 hover:text-indigo-500 font-medium">
+                        View full pipeline →
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Performance Metrics -->
+        <div class="mt-6 bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">Performance Metrics</h3>
+                <p class="text-sm text-gray-500">Key performance indicators for this month</p>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-blue-600">{{ customer_count }}</div>
+                        <div class="text-sm text-gray-500">Active Customers</div>
+                        <div class="text-xs text-gray-400 mt-1">
+                            <span class="text-green-600">↗ +0%</span> from last month
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-green-600">{{ deal_count }}</div>
+                        <div class="text-sm text-gray-500">Open Deals</div>
+                        <div class="text-xs text-gray-400 mt-1">
+                            <span class="text-green-600">↗ +0%</span> from last month
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-yellow-600">0%</div>
+                        <div class="text-sm text-gray-500">Win Rate</div>
+                        <div class="text-xs text-gray-400 mt-1">
+                            <span class="text-gray-500">→ 0%</span> from last month
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-purple-600">0</div>
+                        <div class="text-sm text-gray-500">Activities This Month</div>
+                        <div class="text-xs text-gray-400 mt-1">
+                            <span class="text-green-600">↗ +0%</span> from last month
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-3 bg-gray-50">
+                <a href="/crm/reports" class="text-sm text-indigo-600 hover:text-indigo-500 font-medium">
+                    View detailed reports →
+                </a>
+            </div>
+        </div>
+
+        <!-- Recent Customers -->
+        <div class="mt-6 bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900">Recent Customers</h3>
+                    <p class="text-sm text-gray-500">Latest customer additions</p>
+                </div>
+                <a href="/crm/customers" class="text-indigo-600 hover:text-indigo-500 text-sm font-medium">
+                    View all
+                </a>
+            </div>
+            <div class="overflow-hidden">
+                {% if customer_count == 0 %}
+                <div class="p-6 text-center text-gray-500">
+                    <div class="text-gray-400 text-4xl mb-2">🏢</div>
+                    <p class="text-sm">No customers yet</p>
+                    <p class="text-xs text-gray-400 mt-1">Start building your customer base</p>
+                    <a href="/crm/customers/new" 
+                       class="mt-3 inline-block bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
+                        Add First Customer
+                    </a>
+                </div>
+                {% else %}
+                <div class="px-6 py-4">
+                    <p class="text-center text-gray-500">Customer list will appear here when you have customer data.</p>
+                </div>
+                {% endif %}
+            </div>
+            {% if customer_count > 0 %}
+            <div class="px-6 py-3 bg-gray-50">
+                <a href="/crm/customers" class="text-sm text-indigo-600 hover:text-indigo-500 font-medium">
+                    View all customers →
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

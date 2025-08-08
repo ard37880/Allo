@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Deals - CRM - Allo{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center space-x-8">
+                    <a href="/dashboard" class="text-xl font-semibold text-gray-900">Allo</a>
+                    <div class="flex space-x-4">
+                        <a href="/crm" class="text-gray-500 hover:text-gray-700">CRM</a>
+                        <a href="/crm/customers" class="text-gray-500 hover:text-gray-700">Customers</a>
+                        <a href="/crm/deals" class="text-indigo-600 font-medium">Deals</a>
+                        <a href="/crm/activities" class="text-gray-500 hover:text-gray-700">Activities</a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="/crm/deals/new" 
+                       class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700">
+                        Create Deal
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">Deals Pipeline</h3>
+            </div>
+            
+            {% if deals.len() == 0 %}
+            <div class="p-6 text-center">
+                <div class="text-gray-400 text-6xl mb-4">💼</div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No deals yet</h3>
+                <p class="text-gray-500 mb-4">Start tracking your sales pipeline.</p>
+                <a href="/crm/deals/new" 
+                   class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
+                    Create First Deal
+                </a>
+            </div>
+            {% else %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Deal
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Value
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Currency
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Stage
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Expected Close
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for deal in deals %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">{{ deal.title }}</div>
+                                {% if deal.description != "" %}
+                                <div class="text-sm text-gray-500">{{ deal.description }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {% if deal.value != "" %}
+                                {{ deal.value }}
+                                {% else %}
+                                —
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ deal.currency }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if deal.stage == "prospect" %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                    Prospect
+                                </span>
+                                {% else if deal.stage == "negotiation" %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                    Negotiation
+                                </span>
+                                {% else if deal.stage == "closed_won" %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                    Closed Won
+                                </span>
+                                {% else if deal.stage == "closed_lost" %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                    Closed Lost
+                                </span>
+                                {% else %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                                    {{ deal.stage }}
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {% if deal.expected_close_date != "" %}
+                                {{ deal.expected_close_date }}
+                                {% else %}
+                                —
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <a href="/crm/deals/{{ deal.id }}" class="text-indigo-600 hover:text-indigo-900 mr-3">
+                                    View
+                                </a>
+                                <a href="/crm/deals/{{ deal.id }}/edit" class="text-gray-600 hover:text-gray-900">
+                                    Edit
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

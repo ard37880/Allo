@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Activities - CRM - Allo{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center space-x-8">
+                    <a href="/dashboard" class="text-xl font-semibold text-gray-900">Allo</a>
+                    <div class="flex space-x-4">
+                        <a href="/crm" class="text-gray-500 hover:text-gray-700">CRM</a>
+                        <a href="/crm/customers" class="text-gray-500 hover:text-gray-700">Customers</a>
+                        <a href="/crm/deals" class="text-gray-500 hover:text-gray-700">Deals</a>
+                        <a href="/crm/activities" class="text-indigo-600 font-medium">Activities</a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="/crm/activities/new" 
+                       class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700">
+                        Log Activity
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">Activity Log</h3>
+            </div>
+            
+            {% if activities.len() == 0 %}
+            <div class="p-6 text-center">
+                <div class="text-gray-400 text-6xl mb-4">📝</div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No activities yet</h3>
+                <p class="text-gray-500 mb-4">Start logging your customer interactions.</p>
+                <a href="/crm/activities/new" 
+                   class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
+                    Log First Activity
+                </a>
+            </div>
+            {% else %}
+            <div class="divide-y divide-gray-200">
+                {% for activity in activities %}
+                <div class="p-6">
+                    <div class="flex items-start space-x-4">
+                        <div class="flex-shrink-0">
+                            {% if activity.activity_type == "call" %}
+                            <span class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-blue-100 text-blue-800">
+                                📞
+                            </span>
+                            {% else if activity.activity_type == "meeting" %}
+                            <span class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-green-100 text-green-800">
+                                🤝
+                            </span>
+                            {% else if activity.activity_type == "email" %}
+                            <span class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-purple-100 text-purple-800">
+                                ✉️
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-gray-100 text-gray-800">
+                                📝
+                            </span>
+                            {% endif %}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between">
+                                <p class="text-sm font-medium text-gray-900">
+                                    {{ activity.subject }}
+                                    {% if activity.completed %}
+                                    <span class="ml-2 inline-flex px-2 py-0.5 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                                        Completed
+                                    </span>
+                                    {% else %}
+                                    <span class="ml-2 inline-flex px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
+                                        Pending
+                                    </span>
+                                    {% endif %}
+                                </p>
+                                <div class="text-sm text-gray-500">
+                                    {{ activity.activity_date }}
+                                </div>
+                            </div>
+                            {% if activity.description != "" %}
+                            <p class="mt-1 text-sm text-gray-600">{{ activity.description }}</p>
+                            {% endif %}
+                            <div class="mt-2 flex items-center space-x-4 text-xs text-gray-500">
+                                <span class="capitalize">{{ activity.activity_type }}</span>
+                                {% if activity.duration_minutes != "" %}
+                                <span>{{ activity.duration_minutes }} minutes</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

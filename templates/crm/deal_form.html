@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if deal.is_some() %}Edit Deal{% else %}Create Deal{% endif %} - CRM - Allo
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center space-x-8">
+                    <a href="/dashboard" class="text-xl font-semibold text-gray-900">Allo</a>
+                    <div class="flex space-x-4">
+                        <a href="/crm" class="text-gray-500 hover:text-gray-700">CRM</a>
+                        <a href="/crm/deals" class="text-indigo-600 font-medium">Deals</a>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <a href="/crm/deals" class="text-gray-500 hover:text-gray-700">← Back to Deals</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-3xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">
+                    {% if deal.is_some() %}Edit Deal{% else %}Create New Deal{% endif %}
+                </h3>
+            </div>
+
+            <form action="{% if deal.is_some() %}/crm/deals/{{ deal.as_ref().unwrap().id }}{% else %}/crm/deals{% endif %}" 
+                    method="POST" class="p-6 space-y-6">
+
+                <!-- Deal Information -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="md:col-span-2">
+                        <label for="title" class="block text-sm font-medium text-gray-700">
+                            Deal Title *
+                        </label>
+                        <input type="text" id="title" name="title" required
+                               value="{% if deal.is_some() %}{{ deal.as_ref().unwrap().title }}{% endif %}"
+                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+
+                    <div>
+                        <label for="customer_id" class="block text-sm font-medium text-gray-700">
+                            Customer *
+                        </label>
+                        <select id="customer_id" name="customer_id" required onchange="updateContacts()"
+                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">Select Customer</option>
+                            {% for customer in customers %}
+                            <option value="{{ customer.id }}" 
+                                {% if customer_id.is_some() && customer_id.unwrap() == customer.id %}selected{% endif %}
+                                {% if deal.is_some() && deal.as_ref().unwrap().customer_id == customer.id %}selected{% endif %}>
+                                {{ customer.company_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="contact_id" class="block text-sm font-medium text-gray-700">
+                            Contact
+                        </label>
+                        <select id="contact_id" name="contact_id"
+                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">Select Contact</option>
+                            {% for contact in contacts %}
+                            <option value="{{ contact.id }}"
+                                {% if deal.is_some() && deal.as_ref().unwrap().contact_id.is_some() && deal.as_ref().unwrap().contact_id.unwrap() == contact.id %}selected{% endif %}>
+                                {{ contact.first_name }} {{ contact.last_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="value" class="block text-sm font-medium text-gray-700">
+                            Deal Value
+                        </label>
+                        <input type="number" id="value" name="value" step="0.01"
+                               value="{% if deal.is_some() && deal.as_ref().unwrap().value.is_some() %}{{ deal.as_ref().unwrap().value.unwrap() }}{% endif %}"
+                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+
+                    <div>
+                        <label for="currency" class="block text-sm font-medium text-gray-700">
+                            Currency
+                        </label>
+                        <select id="currency" name="currency"
+                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="USD" {% if !deal.is_some() || deal.as_ref().unwrap().currency == "USD" %}selected{% endif %}>USD - US Dollar</option>
+                            <option value="CAD" {% if deal.is_some() && deal.as_ref().unwrap().currency == "CAD" %}selected{% endif %}>CAD - Canadian Dollar</option>
+                            <option value="MXN" {% if deal.is_some() && deal.as_ref().unwrap().currency == "MXN" %}selected{% endif %}>MXN - Mexican Peso</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="stage" class="block text-sm font-medium text-gray-700">
+                            Stage *
+                        </label>
+                        <select id="stage" name="stage" required
+                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="prospect" {% if !deal.is_some() || deal.as_ref().unwrap().stage == "prospect" %}selected{% endif %}>Prospect</option>
+                            <option value="negotiation" {% if deal.is_some() && deal.as_ref().unwrap().stage == "negotiation" %}selected{% endif %}>Negotiation</option>
+                            <option value="closed_won" {% if deal.is_some() && deal.as_ref().unwrap().stage == "closed_won" %}selected{% endif %}>Closed Won</option>
+                            <option value="closed_lost" {% if deal.is_some() && deal.as_ref().unwrap().stage == "closed_lost" %}selected{% endif %}>Closed Lost</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="expected_close_date" class="block text-sm font-medium text-gray-700">
+                            Expected Close Date
+                        </label>
+                        <input type="date" id="expected_close_date" name="expected_close_date"
+                               value="{% if deal.is_some() && deal.as_ref().unwrap().expected_close_date.is_some() %}{{ deal.as_ref().unwrap().expected_close_date.unwrap() }}{% endif %}"
+                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label for="description" class="block text-sm font-medium text-gray-700">
+                            Description
+                        </label>
+                        <textarea id="description" name="description" rows="3"
+                                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">{% if deal.is_some() && deal.as_ref().unwrap().description.is_some() %}{{ deal.as_ref().unwrap().description.as_ref().unwrap() }}{% endif %}</textarea>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex justify-end space-x-3 pt-6 border-t">
+                    <a href="/crm/deals" 
+                       class="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400">
+                        Cancel
+                    </a>
+                    <button type="submit" 
+                            class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
+                        {% if deal.is_some() %}Update Deal{% else %}Create Deal{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateContacts() {
+    const customerSelect = document.getElementById('customer_id');
+    const contactSelect = document.getElementById('contact_id');
+    const customerId = customerSelect.value;
+    
+    // Clear existing contacts
+    contactSelect.innerHTML = '<option value="">Select Contact</option>';
+    
+    if (customerId) {
+        // Fetch contacts for the selected customer
+        fetch(`/api/customers/${customerId}/contacts`)
+            .then(response => response.json())
+            .then(contacts => {
+                contacts.forEach(contact => {
+                    const option = document.createElement('option');
+                    option.value = contact.id;
+                    option.textContent = `${contact.first_name} ${contact.last_name}`;
+                    contactSelect.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching contacts:', error);
+            });
+    }
+}
+</script>
+{% endblock %}

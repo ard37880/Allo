@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if role.is_some() %}Edit Role{% else %}Create Role{% endif %} - Team Management - Allo
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center space-x-8">
+                    <a href="/dashboard" class="text-xl font-semibold text-gray-900">Allo</a>
+                    <div class="flex space-x-4">
+                        <a href="/team" class="text-gray-500 hover:text-gray-700">Team</a>
+                        <a href="/team/roles" class="text-indigo-600 font-medium">Roles</a>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <a href="/team/roles" class="text-gray-500 hover:text-gray-700">← Back to Roles</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">
+                    {% if role.is_some() %}Edit Role{% else %}Create New Role{% endif %}
+                </h3>
+            </div>
+
+            {% if !error.is_empty() %}
+            <div class="p-6 border-b border-gray-200">
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                    {{ error }}
+                </div>
+            </div>
+            {% endif %}
+
+            <form action="{% if role.is_some() %}/team/roles/{{ role.as_ref().unwrap().id }}{% else %}/team/roles{% endif %}" 
+                    method="POST" class="p-6 space-y-6">
+
+                <!-- Role Information -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-700">
+                            Role Name *
+                        </label>
+                        <input type="text" id="name" name="name" required
+                               value="{% if role.is_some() %}{{ role.as_ref().unwrap().name }}{% endif %}"
+                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+
+                    <div>
+                        <label class="flex items-center mt-6">
+                            <input type="checkbox" name="is_active" value="true" 
+                                   {% if role.is_none() || role.as_ref().unwrap().is_active %}checked{% endif %}
+                                   class="mr-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                            <span class="text-sm font-medium text-gray-700">Role is active</span>
+                        </label>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label for="description" class="block text-sm font-medium text-gray-700">
+                            Description
+                        </label>
+                        <textarea id="description" name="description" rows="3"
+                                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">{% if role.is_some() %}{{ role.as_ref().unwrap().description }}{% endif %}</textarea>
+                    </div>
+                </div>
+
+                <!-- Permissions -->
+                <div class="border-t pt-6">
+                    <h4 class="text-md font-medium text-gray-900 mb-4">Permissions</h4>
+                    <p class="text-sm text-gray-600 mb-4">Select the permissions this role should have:</p>
+                    
+                    <!-- Customer Management -->
+                    <div class="mb-6">
+                        <h5 class="text-sm font-medium text-gray-900 mb-3">Customer Management</h5>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {% for permission in permissions %}
+                                {% if permission.category == "Customer Management" %}
+                                <label class="flex items-start">
+                                    <input type="checkbox" name="permissions" value="{{ permission.key }}" 
+                                           class="mt-1 mr-3 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                                    <div>
+                                        <span class="text-sm font-medium text-gray-700">{{ permission.name }}</span>
+                                        <p class="text-xs text-gray-500">{{ permission.description }}</p>
+                                    </div>
+                                </label>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Inventory Management -->
+                    <div class="mb-6">
+                        <h5 class="text-sm font-medium text-gray-900 mb-3">Inventory Management</h5>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {% for permission in permissions %}
+                                {% if permission.category == "Inventory Management" %}
+                                <label class="flex items-start">
+                                    <input type="checkbox" name="permissions" value="{{ permission.key }}" 
+                                           class="mt-1 mr-3 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                                    <div>
+                                        <span class="text-sm font-medium text-gray-700">{{ permission.name }}</span>
+                                        <p class="text-xs text-gray-500">{{ permission.description }}</p>
+                                    </div>
+                                </label>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Team Management -->
+                    <div class="mb-6">
+                        <h5 class="text-sm font-medium text-gray-900 mb-3">Team Management</h5>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {% for permission in permissions %}
+                                {% if permission.category == "Team Management" %}
+                                <label class="flex items-start">
+                                    <input type="checkbox" name="permissions" value="{{ permission.key }}" 
+                                           class="mt-1 mr-3 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                                    <div>
+                                        <span class="text-sm font-medium text-gray-700">{{ permission.name }}</span>
+                                        <p class="text-xs text-gray-500">{{ permission.description }}</p>
+                                    </div>
+                                </label>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Expense Tracking -->
+                    <div class="mb-6">
+                        <h5 class="text-sm font-medium text-gray-900 mb-3">Expense Tracking</h5>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {% for permission in permissions %}
+                                {% if permission.category == "Expense Tracking" %}
+                                <label class="flex items-start">
+                                    <input type="checkbox" name="permissions" value="{{ permission.key }}" 
+                                           class="mt-1 mr-3 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                                    <div>
+                                        <span class="text-sm font-medium text-gray-700">{{ permission.name }}</span>
+                                        <p class="text-xs text-gray-500">{{ permission.description }}</p>
+                                    </div>
+                                </label>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Shipping Tracking -->
+                    <div class="mb-6">
+                        <h5 class="text-sm font-medium text-gray-900 mb-3">Shipping Tracking</h5>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {% for permission in permissions %}
+                                {% if permission.category == "Shipping Tracking" %}
+                                <label class="flex items-start">
+                                    <input type="checkbox" name="permissions" value="{{ permission.key }}" 
+                                           class="mt-1 mr-3 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                                    <div>
+                                        <span class="text-sm font-medium text-gray-700">{{ permission.name }}</span>
+                                        <p class="text-xs text-gray-500">{{ permission.description }}</p>
+                                    </div>
+                                </label>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- API Access -->
+                    <div class="mb-6">
+                        <h5 class="text-sm font-medium text-gray-900 mb-3">API Access</h5>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {% for permission in permissions %}
+                                {% if permission.category == "API Access" %}
+                                <label class="flex items-start">
+                                    <input type="checkbox" name="permissions" value="{{ permission.key }}" 
+                                           class="mt-1 mr-3 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                                    <div>
+                                        <span class="text-sm font-medium text-gray-700">{{ permission.name }}</span>
+                                        <p class="text-xs text-gray-500">{{ permission.description }}</p>
+                                    </div>
+                                </label>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex justify-end space-x-3 pt-6 border-t">
+                    <a href="/team/roles" 
+                       class="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400">
+                        Cancel
+                    </a>
+                    <button type="submit" 
+                            class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
+                        {% if role.is_some() %}Update Role{% else %}Create Role{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

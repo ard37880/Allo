@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if customer.is_some() %}Edit Customer{% else %}Add Customer{% endif %} - CRM - Allo
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center space-x-8">
+                    <a href="/dashboard" class="text-xl font-semibold text-gray-900">Allo</a>
+                    <div class="flex space-x-4">
+                        <a href="/crm" class="text-gray-500 hover:text-gray-700">CRM</a>
+                        <a href="/crm/customers" class="text-indigo-600 font-medium">Customers</a>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <a href="/crm/customers" class="text-gray-500 hover:text-gray-700">← Back to Customers</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-3xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">
+                    {% if customer.is_some() %}Edit Customer{% else %}Add New Customer{% endif %}
+                </h3>
+            </div>
+
+            <form action="{% if customer.is_some() %}/crm/customers/{{ customer.as_ref().unwrap().id }}{% else %}/crm/customers{% endif %}" 
+                    method="POST" class="p-6 space-y-6">
+
+                <!-- Company Information -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="md:col-span-2">
+                        <label for="company_name" class="block text-sm font-medium text-gray-700">
+                            Company Name *
+                        </label>
+                        <input type="text" id="company_name" name="company_name" required
+                               value="{% if customer.is_some() %}{{ customer.as_ref().unwrap().company_name }}{% endif %}"
+                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+
+                    <div>
+                        <label for="industry" class="block text-sm font-medium text-gray-700">
+                            Industry
+                        </label>
+                        <select id="industry" name="industry"
+                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">Select Industry</option>
+                            <option value="Technology" {% if customer.is_some() && customer.as_ref().unwrap().industry == "Technology" %}selected{% endif %}>Technology</option>
+                            <option value="Healthcare" {% if customer.is_some() && customer.as_ref().unwrap().industry == "Healthcare" %}selected{% endif %}>Healthcare</option>
+                            <option value="Finance" {% if customer.is_some() && customer.as_ref().unwrap().industry == "Finance" %}selected{% endif %}>Finance</option>
+                            <option value="Manufacturing" {% if customer.is_some() && customer.as_ref().unwrap().industry == "Manufacturing" %}selected{% endif %}>Manufacturing</option>
+                            <option value="Retail" {% if customer.is_some() && customer.as_ref().unwrap().industry == "Retail" %}selected{% endif %}>Retail</option>
+                            <option value="Education" {% if customer.is_some() && customer.as_ref().unwrap().industry == "Education" %}selected{% endif %}>Education</option>
+                            <option value="Real Estate" {% if customer.is_some() && customer.as_ref().unwrap().industry == "Real Estate" %}selected{% endif %}>Real Estate</option>
+                            <option value="Other" {% if customer.is_some() && customer.as_ref().unwrap().industry == "Other" %}selected{% endif %}>Other</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="status" class="block text-sm font-medium text-gray-700">
+                            Status *
+                        </label>
+                        <select id="status" name="status" required
+                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="prospect" {% if customer.is_some() && customer.as_ref().unwrap().status == "prospect" %}selected{% endif %}>Prospect</option>
+                            <option value="active" {% if customer.is_some() && customer.as_ref().unwrap().status == "active" %}selected{% endif %}>Active</option>
+                            <option value="inactive" {% if customer.is_some() && customer.as_ref().unwrap().status == "inactive" %}selected{% endif %}>Inactive</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Contact Information -->
+                <div class="border-t pt-6">
+                    <h4 class="text-md font-medium text-gray-900 mb-4">Contact Information</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-gray-700">
+                                Email
+                            </label>
+                            <input type="email" id="email" name="email"
+                                   value="{% if customer.is_some() %}{{ customer.as_ref().unwrap().email }}{% endif %}"
+                                   class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                       </div>
+
+                       <div>
+                           <label for="phone" class="block text-sm font-medium text-gray-700">
+                               Phone
+                           </label>
+                           <input type="tel" id="phone" name="phone"
+                                  value="{% if customer.is_some() %}{{ customer.as_ref().unwrap().phone }}{% endif %}"
+                                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                       </div>
+
+                       <div class="md:col-span-2">
+                           <label for="website" class="block text-sm font-medium text-gray-700">
+                               Website
+                           </label>
+                           <input type="url" id="website" name="website"
+                                  value="{% if customer.is_some() %}{{ customer.as_ref().unwrap().website }}{% endif %}"
+                                  placeholder="https://example.com"
+                                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                       </div>
+
+                       <div class="md:col-span-2">
+                           <label for="address_line1" class="block text-sm font-medium text-gray-700">
+                               Address Line 1
+                           </label>
+                           <input type="text" id="address_line1" name="address_line1"
+                                  value="{% if customer.is_some() %}{{ customer.as_ref().unwrap().address_line1 }}{% endif %}"
+                                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                       </div>
+
+                       <div class="md:col-span-2">
+                           <label for="address_line2" class="block text-sm font-medium text-gray-700">
+                               Address Line 2
+                           </label>
+                           <input type="text" id="address_line2" name="address_line2"
+                                  value="{% if customer.is_some() %}{{ customer.as_ref().unwrap().address_line2 }}{% endif %}"
+                                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                       </div>
+
+                       <div>
+                           <label for="city" class="block text-sm font-medium text-gray-700">
+                               City
+                           </label>
+                           <input type="text" id="city" name="city"
+                                  value="{% if customer.is_some() %}{{ customer.as_ref().unwrap().city }}{% endif %}"
+                                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                       </div>
+
+                       <div>
+                           <label for="state" class="block text-sm font-medium text-gray-700">
+                               State
+                           </label>
+                           <input type="text" id="state" name="state"
+                                  value="{% if customer.is_some() %}{{ customer.as_ref().unwrap().state }}{% endif %}"
+                                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                       </div>
+
+                       <div>
+                           <label for="postal_code" class="block text-sm font-medium text-gray-700">
+                               Postal Code
+                           </label>
+                           <input type="text" id="postal_code" name="postal_code"
+                                  value="{% if customer.is_some() %}{{ customer.as_ref().unwrap().postal_code }}{% endif %}"
+                                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                       </div>
+
+                       <div>
+                           <label for="country" class="block text-sm font-medium text-gray-700">
+                               Country
+                           </label>
+                           <input type="text" id="country" name="country"
+                                  value="{% if customer.is_some() %}{{ customer.as_ref().unwrap().country }}{% else %}United States{% endif %}"
+                                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                       </div>
+
+                       <div class="md:col-span-2">
+                           <label for="notes" class="block text-sm font-medium text-gray-700">
+                               Notes
+                           </label>
+                           <textarea id="notes" name="notes" rows="3"
+                                     class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">{% if customer.is_some() %}{{ customer.as_ref().unwrap().notes }}{% endif %}</textarea>
+                       </div>
+                   </div>
+               </div>
+
+               <!-- Form Actions -->
+               <div class="flex justify-between pt-6 border-t">
+                   {% if customer.is_some() %}
+                   <a href="/crm/customers/{{ customer.as_ref().unwrap().id }}/delete" 
+                      onclick="return confirm('Are you sure you want to delete this customer? This will also delete all related contacts, deals, and activities.');"
+                      class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700">
+                       Delete Customer
+                   </a>
+                   {% else %}
+                   <div></div>
+                   {% endif %}
+                   
+                   <div class="flex space-x-3">
+                       <a href="/crm/customers" 
+                          class="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400">
+                           Cancel
+                       </a>
+                       <button type="submit" 
+                               class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
+                           {% if customer.is_some() %}Update Customer{% else %}Create Customer{% endif %}
+                       </button>
+                   </div>
+               </div>
+           </form>
+       </div>
+   </div>
+</div>
+{% endblock %}

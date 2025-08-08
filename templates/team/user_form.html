@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if user.is_some() %}Edit User{% else %}Add User{% endif %} - Team Management - Allo
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center space-x-8">
+                    <a href="/dashboard" class="text-xl font-semibold text-gray-900">Allo</a>
+                    <div class="flex space-x-4">
+                        <a href="/team" class="text-gray-500 hover:text-gray-700">Team</a>
+                        <a href="/team/users" class="text-indigo-600 font-medium">Users</a>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <a href="/team/users" class="text-gray-500 hover:text-gray-700">← Back to Users</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-3xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">
+                    {% if user.is_some() %}Edit User{% else %}Add New User{% endif %}
+                </h3>
+            </div>
+
+            {% if !error.is_empty() %}
+            <div class="p-6 border-b border-gray-200">
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                    {{ error }}
+                </div>
+            </div>
+            {% endif %}
+
+            <form action="{% if user.is_some() %}/team/users/{{ user.as_ref().unwrap().id }}{% else %}/team/users{% endif %}" 
+                    method="POST" class="p-6 space-y-6">
+
+                <!-- User Information -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="first_name" class="block text-sm font-medium text-gray-700">
+                            First Name *
+                        </label>
+                        <input type="text" id="first_name" name="first_name" required
+                               value="{% if user.is_some() %}{{ user.as_ref().unwrap().first_name }}{% endif %}"
+                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+
+                    <div>
+                        <label for="last_name" class="block text-sm font-medium text-gray-700">
+                            Last Name *
+                        </label>
+                        <input type="text" id="last_name" name="last_name" required
+                               value="{% if user.is_some() %}{{ user.as_ref().unwrap().last_name }}{% endif %}"
+                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label for="email" class="block text-sm font-medium text-gray-700">
+                            Email Address *
+                        </label>
+                        <input type="email" id="email" name="email" required
+                               value="{% if user.is_some() %}{{ user.as_ref().unwrap().email }}{% endif %}"
+                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label for="password" class="block text-sm font-medium text-gray-700">
+                            Password {% if user.is_none() %}*{% else %}(leave blank to keep current){% endif %}
+                        </label>
+                        <input type="password" id="password" name="password" 
+                               {% if user.is_none() %}required{% endif %} minlength="6"
+                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                        <p class="mt-1 text-sm text-gray-500">{% if user.is_none() %}Minimum 6 characters{% else %}Leave blank to keep current password{% endif %}</p>
+                    </div>
+                </div>
+
+                <!-- Role Assignment -->
+                <div class="border-t pt-6">
+                    <h4 class="text-md font-medium text-gray-900 mb-4">Role Assignment</h4>
+                    <div class="space-y-2">
+                        {% for role in roles %}
+                        <label class="flex items-center">
+                            <input type="checkbox" name="role_ids" value="{{ role.id }}" 
+                                   {% if user.is_some() %}
+                                       {% for user_role in user.as_ref().unwrap().roles %}
+                                           {% if user_role.id == role.id %}checked{% endif %}
+                                       {% endfor %}
+                                   {% endif %}
+                                   class="mr-3 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                            <div>
+                                <span class="text-sm font-medium text-gray-700">{{ role.name }}</span>
+                                {% if role.description != "" %}
+                                <p class="text-sm text-gray-500">{{ role.description }}</p>
+                                {% endif %}
+                                <p class="text-xs text-gray-400">{{ role.permission_count }} permissions</p>
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- User Status -->
+                <div class="border-t pt-6">
+                    <h4 class="text-md font-medium text-gray-900 mb-4">Account Status</h4>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="is_active" value="true" 
+                               {% if user.is_none() || user.as_ref().unwrap().is_active %}checked{% endif %}
+                               class="mr-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                        <span class="text-sm font-medium text-gray-700">Account is active</span>
+                    </label>
+                    <p class="mt-1 text-sm text-gray-500">Inactive users cannot log in to the system</p>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex justify-end space-x-3 pt-6 border-t">
+                    <a href="/team/users" 
+                       class="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400">
+                        Cancel
+                    </a>
+                    <button type="submit" 
+                            class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
+                        {% if user.is_some() %}Update User{% else %}Create User{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

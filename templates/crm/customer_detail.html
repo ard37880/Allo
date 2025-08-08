@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+
+{% block title %}{{ customer.company_name }} - CRM - Allo{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center space-x-8">
+                    <a href="/dashboard" class="text-xl font-semibold text-gray-900">Allo</a>
+                    <div class="flex space-x-4">
+                        <a href="/crm" class="text-gray-500 hover:text-gray-700">CRM</a>
+                        <a href="/crm/customers" class="text-indigo-600 font-medium">Customers</a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="/crm/customers/{{ customer.id }}/edit" 
+                       class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700">
+                        Edit Customer
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <!-- Customer Header -->
+        <div class="bg-white shadow rounded-lg mb-6">
+            <div class="px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">{{ customer.company_name }}</h1>
+                        <div class="mt-1 flex items-center space-x-4 text-sm text-gray-500">
+                            {% if customer.industry != "" %}
+                            <span>{{ customer.industry }}</span>
+                            {% endif %}
+                            
+                            {% if customer.status == "active" %}
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                Active
+                            </span>
+                            {% else if customer.status == "prospect" %}
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                Prospect
+                            </span>
+                            {% else %}
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                Inactive
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        {% if customer.website != "" %}
+                        <a href="{{ customer.website }}" target="_blank" 
+                           class="text-indigo-600 hover:text-indigo-500 text-sm">
+                            {{ customer.website }}
+                        </a>
+                        {% endif %}
+                        
+                        {% if customer.email != "" %}
+                        <div class="text-sm text-gray-500">
+                            <a href="mailto:{{ customer.email }}" class="hover:text-gray-700">
+                                {{ customer.email }}
+                            </a>
+                        </div>
+                        {% endif %}
+                        
+                        {% if customer.phone != "" %}
+                        <div class="text-sm text-gray-500">
+                            <a href="tel:{{ customer.phone }}" class="hover:text-gray-700">
+                                {{ customer.phone }}
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if customer.notes != "" %}
+                <div class="mt-4 p-3 bg-gray-50 rounded-md">
+                    <p class="text-sm text-gray-700">{{ customer.notes }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Contacts -->
+            <div class="lg:col-span-1">
+                <div class="bg-white shadow rounded-lg">
+                    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                        <h3 class="text-lg font-medium text-gray-900">Contacts</h3>
+                        <button onclick="toggleContactForm()" 
+                                class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
+                            Add Contact
+                        </button>
+                    </div>
+                    
+                    <!-- Add Contact Form (Hidden by default) -->
+                    <div id="contact-form" class="hidden border-b border-gray-200">
+                        <form action="/crm/contacts" method="POST" class="p-4 space-y-3">
+                            <input type="hidden" name="customer_id" value="{{ customer.id }}">
+                            
+                            <div class="grid grid-cols-2 gap-3">
+                                <input type="text" name="first_name" placeholder="First Name" required
+                                       class="px-3 py-2 border border-gray-300 rounded text-sm">
+                                <input type="text" name="last_name" placeholder="Last Name" required
+                                       class="px-3 py-2 border border-gray-300 rounded text-sm">
+                            </div>
+                            
+                            <input type="text" name="title" placeholder="Job Title"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded text-sm">
+                            
+                            <div class="grid grid-cols-2 gap-3">
+                                <input type="email" name="email" placeholder="Email"
+                                       class="px-3 py-2 border border-gray-300 rounded text-sm">
+                                <input type="tel" name="phone" placeholder="Phone"
+                                       class="px-3 py-2 border border-gray-300 rounded text-sm">
+                            </div>
+                            
+                            <input type="tel" name="mobile" placeholder="Mobile"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded text-sm">
+                            
+                            <label class="flex items-center">
+                                <input type="checkbox" name="is_primary" value="true" class="mr-2">
+                                <span class="text-sm">Primary Contact</span>
+                            </label>
+                            
+                            <textarea name="notes" placeholder="Notes" rows="2"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded text-sm"></textarea>
+                            
+                            <div class="flex space-x-2">
+                                <button type="submit" 
+                                        class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
+                                    Add Contact
+                                </button>
+                                <button type="button" onclick="toggleContactForm()"
+                                        class="bg-gray-300 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-400">
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="divide-y divide-gray-200">
+                        {% if contacts.len() == 0 %}
+                        <div class="p-6 text-center text-gray-500">
+                            No contacts yet. Add the first contact above.
+                        </div>
+                        {% else %}
+                        {% for contact in contacts %}
+                        <div class="p-4">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <h4 class="text-sm font-medium text-gray-900">
+                                        {{ contact.first_name }} {{ contact.last_name }}
+                                        {% if contact.is_primary %}
+                                        <span class="ml-1 inline-flex px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                                            Primary
+                                        </span>
+                                        {% endif %}
+                                    </h4>
+                                    {% if contact.title != "" %}
+                                    <p class="text-sm text-gray-600">{{ contact.title }}</p>
+                                    {% endif %}
+                                    
+                                    {% if contact.email != "" %}
+                                    <p class="text-sm text-gray-500">
+                                        <a href="mailto:{{ contact.email }}" class="hover:text-gray-700">
+                                            {{ contact.email }}
+                                        </a>
+                                    </p>
+                                    {% endif %}
+                                    
+                                    {% if contact.phone != "" %}
+                                    <p class="text-sm text-gray-500">
+                                        <a href="tel:{{ contact.phone }}" class="hover:text-gray-700">
+                                            {{ contact.phone }}
+                                        </a>
+                                    </p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Deals and Activities -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Deals -->
+                <div class="bg-white shadow rounded-lg">
+                    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                        <h3 class="text-lg font-medium text-gray-900">Deals</h3>
+                        <a href="/crm/deals/new?customer_id={{ customer.id }}" 
+                           class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
+                            Add Deal
+                        </a>
+                    </div>
+                    
+                    <div class="divide-y divide-gray-200">
+                        {% if deals.len() == 0 %}
+                        <div class="p-6 text-center text-gray-500">
+                            No deals yet. Create the first deal above.
+                        </div>
+                        {% else %}
+                        {% for deal in deals %}
+                        <div class="p-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex-1">
+                                    <h4 class="text-sm font-medium text-gray-900">
+                                        <a href="/crm/deals/{{ deal.id }}" class="text-indigo-600 hover:text-indigo-900">
+                                            {{ deal.title }}
+                                        </a>
+                                    </h4>
+                                    {% if deal.description != "" %}
+                                    <p class="text-sm text-gray-600">{{ deal.description }}</p>
+                                    {% endif %}
+                                    
+                                    <div class="mt-1 flex items-center space-x-4 text-xs text-gray-500">
+                                        {% if deal.value != "" %}
+                                        <span>{{ deal.currency }} {{ deal.value }}</span>
+                                        {% endif %}
+                                        
+                                        {% if deal.stage == "closed_won" %}
+                                        <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                                            Closed Won
+                                        </span>
+                                        {% else if deal.stage == "closed_lost" %}
+                                        <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-red-100 text-red-800">
+                                            Closed Lost
+                                        </span>
+                                        {% else if deal.stage == "negotiation" %}
+                                        <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+                                            Negotiation
+                                        </span>
+                                        {% else %}
+                                        <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            {{ deal.stage }}
+                                        </span>
+                                        {% endif %}
+                                        
+                                        <a href="/crm/deals/{{ deal.id }}/edit" class="text-indigo-600 hover:text-indigo-900">
+                                            Edit
+                                        </a>
+                                    </div>
+                                </div>
+                                {% if deal.expected_close_date != "" %}
+                                <div class="text-xs text-gray-500">
+                                    Expected: {{ deal.expected_close_date }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Activities -->
+                <div class="bg-white shadow rounded-lg">
+                    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                        <h3 class="text-lg font-medium text-gray-900">Recent Activities</h3>
+                        <a href="/crm/activities/new?customer_id={{ customer.id }}" 
+                           class="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700">
+                            Log Activity
+                        </a>
+                    </div>
+                    
+                    <div class="divide-y divide-gray-200">
+                        {% if activities.len() == 0 %}
+                        <div class="p-6 text-center text-gray-500">
+                            No activities yet. Log the first activity above.
+                        </div>
+                        {% else %}
+                        {% for activity in activities %}
+                        <div class="p-4">
+                            <div class="flex items-start space-x-3">
+                                <span class="inline-flex items-center justify-center h-6 w-6 rounded-full text-xs bg-gray-100 text-gray-800">
+                                    📝
+                                </span>
+                                
+                                <div class="flex-1">
+                                    <h4 class="text-sm font-medium text-gray-900">{{ activity.subject }}</h4>
+                                    {% if activity.description != "" %}
+                                    <p class="text-sm text-gray-600 mt-1">{{ activity.description }}</p>
+                                    {% endif %}
+                                    
+                                    <div class="mt-1 flex items-center space-x-3 text-xs text-gray-500">
+                                        <span>{{ activity.activity_date }}</span>
+                                        {% if activity.duration_minutes != "" %}
+                                        <span>{{ activity.duration_minutes }} minutes</span>
+                                        {% endif %}
+                                        {% if !activity.completed %}
+                                        <span class="text-yellow-600">Pending</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+function toggleContactForm() {
+    const form = document.getElementById('contact-form');
+    form.classList.toggle('hidden');
+}
+</script>
+{% endblock %}

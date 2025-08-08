@@ -1,0 +1,16 @@
+/* Optional: Add any custom styles here */
+.btn {
+    @apply px-4 py-2 rounded-md font-medium transition-colors;
+}
+
+.btn-primary {
+    @apply bg-indigo-600 text-white hover:bg-indigo-700;
+}
+
+.btn-secondary {
+    @apply bg-gray-300 text-gray-700 hover:bg-gray-400;
+}
+
+.btn-danger {
+    @apply bg-red-600 text-white hover:bg-red-700;
+}
