@@ -3,8 +3,10 @@ mod handlers;
 mod middleware;
 mod models;
 mod utils;
+mod filters; // Add this line
 
 use axum::{
+    body::Bytes,
     extract::DefaultBodyLimit,
     response::Redirect,
     routing::{get, post},
@@ -51,6 +53,49 @@ async fn main() {
     // Start the server
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
+}
+
+// Custom handler for form data that handles raw body
+async fn handle_create_user(
+    cookies: tower_cookies::Cookies,
+    axum::extract::State(db): axum::extract::State<Database>,
+    body: Bytes,
+) -> Result<Redirect, axum::http::StatusCode> {
+    let body_str = String::from_utf8(body.to_vec())
+        .map_err(|_| axum::http::StatusCode::BAD_REQUEST)?;
+    handlers::team::create_user(cookies, axum::extract::State(db), body_str).await
+}
+
+async fn handle_update_user(
+    cookies: tower_cookies::Cookies,
+    axum::extract::Path(user_id): axum::extract::Path<uuid::Uuid>,
+    axum::extract::State(db): axum::extract::State<Database>,
+    body: Bytes,
+) -> Result<Redirect, axum::http::StatusCode> {
+    let body_str = String::from_utf8(body.to_vec())
+        .map_err(|_| axum::http::StatusCode::BAD_REQUEST)?;
+    handlers::team::update_user(cookies, axum::extract::State(db), axum::extract::Path(user_id), body_str).await
+}
+
+async fn handle_create_role(
+    cookies: tower_cookies::Cookies,
+    axum::extract::State(db): axum::extract::State<Database>,
+    body: Bytes,
+) -> Result<Redirect, axum::http::StatusCode> {
+    let body_str = String::from_utf8(body.to_vec())
+        .map_err(|_| axum::http::StatusCode::BAD_REQUEST)?;
+    handlers::team::create_role(cookies, axum::extract::State(db), body_str).await
+}
+
+async fn handle_update_role(
+    cookies: tower_cookies::Cookies,
+    axum::extract::Path(role_id): axum::extract::Path<uuid::Uuid>,
+    axum::extract::State(db): axum::extract::State<Database>,
+    body: Bytes,
+) -> Result<Redirect, axum::http::StatusCode> {
+    let body_str = String::from_utf8(body.to_vec())
+        .map_err(|_| axum::http::StatusCode::BAD_REQUEST)?;
+    handlers::team::update_role(cookies, axum::extract::State(db), axum::extract::Path(role_id), body_str).await
 }
 
 fn create_router(db: Database) -> Router {
@@ -101,9 +146,9 @@ fn create_router(db: Database) -> Router {
         .route("/team", get(handlers::team::team_dashboard))
         .route("/team/users", get(handlers::team::users_list))
         .route("/team/users/new", get(handlers::team::user_form))
-        .route("/team/users", post(handlers::team::create_user))
+        .route("/team/users", post(handle_create_user)) // Use custom handler
         .route("/team/users/:id/edit", get(handlers::team::user_edit_form))
-        .route("/team/users/:id", post(handlers::team::update_user))
+        .route("/team/users/:id", post(handle_update_user)) // Use custom handler
         .route("/team/users/:id/lock", get(handlers::team::lock_user))
         .route("/team/users/:id/unlock", get(handlers::team::unlock_user))
         .route("/team/users/:id/delete", get(handlers::team::delete_user))
@@ -111,9 +156,9 @@ fn create_router(db: Database) -> Router {
         // Roles routes
         .route("/team/roles", get(handlers::team::roles_list))
         .route("/team/roles/new", get(handlers::team::role_form))
-        .route("/team/roles", post(handlers::team::create_role))
+        .route("/team/roles", post(handle_create_role)) // Use custom handler
         .route("/team/roles/:id/edit", get(handlers::team::role_edit_form))
-        .route("/team/roles/:id", post(handlers::team::update_role))
+        .route("/team/roles/:id", post(handle_update_role)) // Use custom handler
         .route("/team/roles/:id/delete", get(handlers::team::delete_role))
         
         // API routes

@@ -58,7 +58,43 @@ struct RoleFormTemplate {
     role_permissions: Vec<String>,
 }
 
-#[derive(Deserialize)]
+// Fixed form structures to handle HTML form data properly
+#[derive(Deserialize, Debug)]
+pub struct UserFormRaw {
+    email: String,
+    password: Option<String>,
+    first_name: String,
+    last_name: String,
+    #[serde(default)]
+    role_ids: String, // Changed from Vec<String> to String
+    is_active: Option<String>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct RoleFormRaw {
+    name: String,
+    description: String,
+    #[serde(default)]
+    permissions: String, // Changed from Vec<String> to String
+    is_active: Option<String>,
+}
+
+// Helper function to parse comma-separated or multi-value form data
+fn parse_form_array(input: &str) -> Vec<String> {
+    if input.trim().is_empty() {
+        return Vec::new();
+    }
+    
+    // Handle both comma-separated values and individual values
+    input
+        .split(',')
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .collect()
+}
+
+// Alternative approach using axum's Form extractor with custom parsing
+#[derive(Deserialize, Debug)]
 pub struct UserForm {
     email: String,
     password: Option<String>,
@@ -68,7 +104,7 @@ pub struct UserForm {
     is_active: Option<String>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct RoleForm {
     name: String,
     description: String,
@@ -120,7 +156,7 @@ pub async fn team_dashboard(
         .await
         .unwrap_or(0);
 
-    // Get recent audit activities - simplified query to avoid IpAddr issues
+    // Get recent audit activities - simplified query to avoid the IpAddr issue
     let recent_activities = vec![]; // Simplified for now to avoid the IpAddr issue
 
     let template = TeamDashboardTemplate {
@@ -212,10 +248,11 @@ pub async fn user_edit_form(
     Ok(Html(template.render().unwrap()))
 }
 
+// Updated create_user function with better form handling
 pub async fn create_user(
     cookies: Cookies,
     State(db): State<Database>,
-    Form(form): Form<UserForm>,
+    body: String, // Use raw body to handle form parsing manually
 ) -> Result<Redirect, StatusCode> {
     let current_user = get_current_user(cookies, &db).await
         .ok_or(StatusCode::UNAUTHORIZED)?;
@@ -224,16 +261,26 @@ pub async fn create_user(
         return Err(StatusCode::FORBIDDEN);
     }
 
+    // Parse form data manually to handle multiple values properly
+    let form_data = parse_form_data(&body);
+    
+    let email = form_data.get("email").ok_or(StatusCode::BAD_REQUEST)?.clone();
+    let first_name = form_data.get("first_name").ok_or(StatusCode::BAD_REQUEST)?.clone();
+    let last_name = form_data.get("last_name").ok_or(StatusCode::BAD_REQUEST)?.clone();
+    let password = form_data.get("password").cloned();
+    let is_active = form_data.contains_key("is_active");
+    
+    // Handle role_ids - get all values with this key
+    let role_ids = get_form_values(&body, "role_ids");
+
     // Validate password is provided for new users
-    let password = form.password.ok_or(StatusCode::BAD_REQUEST)?;
+    let password = password.ok_or(StatusCode::BAD_REQUEST)?;
     if password.len() < 6 {
         return Err(StatusCode::BAD_REQUEST);
     }
 
     let password_hash = hash_password(&password)
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    let is_active = form.is_active.is_some();
 
     // Create user
     let user = sqlx::query_as::<_, User>(
@@ -243,17 +290,17 @@ pub async fn create_user(
         RETURNING *
         "#,
     )
-    .bind(&form.email)
+    .bind(&email)
     .bind(&password_hash)
-    .bind(&form.first_name)
-    .bind(&form.last_name)
+    .bind(&first_name)
+    .bind(&last_name)
     .bind(is_active)
     .fetch_one(&db)
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     // Assign roles
-    for role_id_str in form.role_ids {
+    for role_id_str in role_ids {
         if let Ok(role_id) = Uuid::parse_str(&role_id_str) {
             let _ = sqlx::query(
                 "INSERT INTO user_roles (user_id, role_id, assigned_by) VALUES ($1, $2, $3)"
@@ -275,9 +322,9 @@ pub async fn create_user(
         Some(user.id),
         None,
         Some(serde_json::json!({
-            "email": form.email,
-            "first_name": form.first_name,
-            "last_name": form.last_name,
+            "email": email,
+            "first_name": first_name,
+            "last_name": last_name,
             "is_active": is_active
         })),
     ).await;
@@ -289,7 +336,7 @@ pub async fn update_user(
     cookies: Cookies,
     State(db): State<Database>,
     Path(user_id): Path<Uuid>,
-    Form(form): Form<UserForm>,
+    body: String, // Use raw body to handle form parsing manually
 ) -> Result<Redirect, StatusCode> {
     let current_user = get_current_user(cookies, &db).await
         .ok_or(StatusCode::UNAUTHORIZED)?;
@@ -298,10 +345,20 @@ pub async fn update_user(
         return Err(StatusCode::FORBIDDEN);
     }
 
-    let is_active = form.is_active.is_some();
+    // Parse form data manually to handle multiple values properly
+    let form_data = parse_form_data(&body);
+    
+    let email = form_data.get("email").ok_or(StatusCode::BAD_REQUEST)?.clone();
+    let first_name = form_data.get("first_name").ok_or(StatusCode::BAD_REQUEST)?.clone();
+    let last_name = form_data.get("last_name").ok_or(StatusCode::BAD_REQUEST)?.clone();
+    let password = form_data.get("password").cloned();
+    let is_active = form_data.contains_key("is_active");
+    
+    // Handle role_ids - get all values with this key
+    let role_ids = get_form_values(&body, "role_ids");
 
     // Handle password update properly
-    if let Some(password) = &form.password {
+    if let Some(password) = &password {
         if !password.is_empty() && password.len() >= 6 {
             let password_hash = hash_password(password)
                 .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
@@ -310,9 +367,9 @@ pub async fn update_user(
             sqlx::query(
                 "UPDATE users SET email = $1, first_name = $2, last_name = $3, is_active = $4, password_hash = $5, updated_at = NOW() WHERE id = $6"
             )
-            .bind(&form.email)
-            .bind(&form.first_name)
-            .bind(&form.last_name)
+            .bind(&email)
+            .bind(&first_name)
+            .bind(&last_name)
             .bind(is_active)
             .bind(&password_hash)
             .bind(user_id)
@@ -324,9 +381,9 @@ pub async fn update_user(
             sqlx::query(
                 "UPDATE users SET email = $1, first_name = $2, last_name = $3, is_active = $4, updated_at = NOW() WHERE id = $5"
             )
-            .bind(&form.email)
-            .bind(&form.first_name)
-            .bind(&form.last_name)
+            .bind(&email)
+            .bind(&first_name)
+            .bind(&last_name)
             .bind(is_active)
             .bind(user_id)
             .execute(&db)
@@ -338,9 +395,9 @@ pub async fn update_user(
         sqlx::query(
             "UPDATE users SET email = $1, first_name = $2, last_name = $3, is_active = $4, updated_at = NOW() WHERE id = $5"
         )
-        .bind(&form.email)
-        .bind(&form.first_name)
-        .bind(&form.last_name)
+        .bind(&email)
+        .bind(&first_name)
+        .bind(&last_name)
         .bind(is_active)
         .bind(user_id)
         .execute(&db)
@@ -355,7 +412,7 @@ pub async fn update_user(
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    for role_id_str in form.role_ids {
+    for role_id_str in role_ids {
         if let Ok(role_id) = Uuid::parse_str(&role_id_str) {
             let _ = sqlx::query(
                 "INSERT INTO user_roles (user_id, role_id, assigned_by) VALUES ($1, $2, $3)"
@@ -377,9 +434,9 @@ pub async fn update_user(
         Some(user_id),
         None,
         Some(serde_json::json!({
-            "email": form.email,
-            "first_name": form.first_name,
-            "last_name": form.last_name,
+            "email": email,
+            "first_name": first_name,
+            "last_name": last_name,
             "is_active": is_active
         })),
     ).await;
@@ -591,7 +648,7 @@ pub async fn role_edit_form(
 pub async fn create_role(
     cookies: Cookies,
     State(db): State<Database>,
-    Form(form): Form<RoleForm>,
+    body: String, // Use raw body to handle form parsing manually
 ) -> Result<Redirect, StatusCode> {
     let current_user = get_current_user(cookies, &db).await
         .ok_or(StatusCode::UNAUTHORIZED)?;
@@ -600,8 +657,17 @@ pub async fn create_role(
         return Err(StatusCode::FORBIDDEN);
     }
 
-    let is_active = form.is_active.is_some();
-    let permissions_json = serde_json::to_value(&form.permissions)
+    // Parse form data manually to handle multiple values properly
+    let form_data = parse_form_data(&body);
+    
+    let name = form_data.get("name").ok_or(StatusCode::BAD_REQUEST)?.clone();
+    let description = form_data.get("description").cloned().unwrap_or_default();
+    let is_active = form_data.contains_key("is_active");
+    
+    // Handle permissions - get all values with this key
+    let permissions = get_form_values(&body, "permissions");
+
+    let permissions_json = serde_json::to_value(&permissions)
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let role = sqlx::query_as::<_, Role>(
@@ -611,8 +677,8 @@ pub async fn create_role(
         RETURNING *
         "#,
     )
-    .bind(&form.name)
-    .bind(if form.description.is_empty() { None } else { Some(&form.description) })
+    .bind(&name)
+    .bind(if description.is_empty() { None } else { Some(&description) })
     .bind(permissions_json)
     .bind(is_active)
     .bind(current_user.id)
@@ -629,9 +695,9 @@ pub async fn create_role(
         Some(role.id),
         None,
         Some(serde_json::json!({
-            "name": form.name,
-            "description": form.description,
-            "permissions": form.permissions,
+            "name": name,
+            "description": description,
+            "permissions": permissions,
             "is_active": is_active
         })),
     ).await;
@@ -643,7 +709,7 @@ pub async fn update_role(
     cookies: Cookies,
     State(db): State<Database>,
     Path(role_id): Path<Uuid>,
-    Form(form): Form<RoleForm>,
+    body: String, // Use raw body to handle form parsing manually
 ) -> Result<Redirect, StatusCode> {
     let current_user = get_current_user(cookies, &db).await
         .ok_or(StatusCode::UNAUTHORIZED)?;
@@ -652,8 +718,17 @@ pub async fn update_role(
         return Err(StatusCode::FORBIDDEN);
     }
 
-    let is_active = form.is_active.is_some();
-    let permissions_json = serde_json::to_value(&form.permissions)
+    // Parse form data manually to handle multiple values properly
+    let form_data = parse_form_data(&body);
+    
+    let name = form_data.get("name").ok_or(StatusCode::BAD_REQUEST)?.clone();
+    let description = form_data.get("description").cloned().unwrap_or_default();
+    let is_active = form_data.contains_key("is_active");
+    
+    // Handle permissions - get all values with this key
+    let permissions = get_form_values(&body, "permissions");
+
+    let permissions_json = serde_json::to_value(&permissions)
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     sqlx::query(
@@ -667,8 +742,8 @@ pub async fn update_role(
         WHERE id = $5
         "#,
     )
-    .bind(&form.name)
-    .bind(if form.description.is_empty() { None } else { Some(&form.description) })
+    .bind(&name)
+    .bind(if description.is_empty() { None } else { Some(&description) })
     .bind(permissions_json)
     .bind(is_active)
     .bind(role_id)
@@ -685,9 +760,9 @@ pub async fn update_role(
         Some(role_id),
         None,
         Some(serde_json::json!({
-            "name": form.name,
-            "description": form.description,
-            "permissions": form.permissions,
+            "name": name,
+            "description": description,
+            "permissions": permissions,
             "is_active": is_active
         })),
     ).await;
@@ -750,6 +825,41 @@ pub async fn delete_role(
     ).await;
 
     Ok(Redirect::to("/team/roles"))
+}
+
+// Helper functions for form parsing
+use std::collections::HashMap;
+
+fn parse_form_data(body: &str) -> HashMap<String, String> {
+    let mut form_data = HashMap::new();
+    
+    for pair in body.split('&') {
+        if let Some((key, value)) = pair.split_once('=') {
+            let key = urlencoding::decode(key).unwrap_or_default().into_owned();
+            let value = urlencoding::decode(value).unwrap_or_default().into_owned();
+            form_data.insert(key, value);
+        }
+    }
+    
+    form_data
+}
+
+fn get_form_values(body: &str, key: &str) -> Vec<String> {
+    let mut values = Vec::new();
+    
+    for pair in body.split('&') {
+        if let Some((form_key, value)) = pair.split_once('=') {
+            let decoded_key = urlencoding::decode(form_key).unwrap_or_default();
+            if decoded_key == key {
+                let decoded_value = urlencoding::decode(value).unwrap_or_default().into_owned();
+                if !decoded_value.is_empty() {
+                    values.push(decoded_value);
+                }
+            }
+        }
+    }
+    
+    values
 }
 
 // Helper functions
@@ -872,6 +982,3 @@ async fn create_audit_log(
 
     Ok(())
 }
-
-// Remove the login function from this file - it should be in auth.rs
-// This was causing the compilation errors

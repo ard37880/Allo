@@ -24,3 +24,4 @@ askama_axum = "0.4"
 env_logger = "0.10"
 rust_decimal = { version = "1.0", features = ["serde"] }
 time = { version = "0.3", features = ["macros"] }
+urlencoding = "2.1"

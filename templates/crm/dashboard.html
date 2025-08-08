@@ -263,7 +263,7 @@
                                 <span class="text-sm font-medium text-gray-900">Prospect</span>
                             </div>
                             <div class="text-sm text-gray-600">
-                                <span class="font-medium">0</span> deals • <span class="font-medium">$0</span>
+                                <span class="font-medium">{{ prospect_deals }}</span> deals • <span class="font-medium">{{ prospect_value }}</span>
                             </div>
                         </div>
 
@@ -274,7 +274,7 @@
                                 <span class="text-sm font-medium text-gray-900">Negotiation</span>
                             </div>
                             <div class="text-sm text-gray-600">
-                                <span class="font-medium">0</span> deals • <span class="font-medium">$0</span>
+                                <span class="font-medium">{{ negotiation_deals }}</span> deals • <span class="font-medium">{{ negotiation_value }}</span>
                             </div>
                         </div>
 
@@ -285,7 +285,7 @@
                                 <span class="text-sm font-medium text-gray-900">Closed Won</span>
                             </div>
                             <div class="text-sm text-gray-600">
-                                <span class="font-medium">0</span> deals • <span class="font-medium">$0</span>
+                                <span class="font-medium">{{ closed_won_deals }}</span> deals • <span class="font-medium">{{ closed_won_value }}</span>
                             </div>
                         </div>
 
@@ -296,7 +296,7 @@
                                 <span class="text-sm font-medium text-gray-900">Closed Lost</span>
                             </div>
                             <div class="text-sm text-gray-600">
-                                <span class="font-medium">0</span> deals • <span class="font-medium">$0</span>
+                                <span class="font-medium">{{ closed_lost_deals }}</span> deals • <span class="font-medium">{{ closed_lost_value }}</span>
                             </div>
                         </div>
                     </div>
@@ -331,28 +331,52 @@
                         <div class="text-2xl font-bold text-blue-600">{{ customer_count }}</div>
                         <div class="text-sm text-gray-500">Active Customers</div>
                         <div class="text-xs text-gray-400 mt-1">
-                            <span class="text-green-600">↗ +0%</span> from last month
+                            {% if customer_change > 0 %}
+                            <span class="text-green-600">↗ +{{ customer_change }}%</span> from last month
+                            {% else if customer_change < 0 %}
+                            <span class="text-red-600">↘ {{ customer_change }}%</span> from last month
+                            {% else %}
+                            <span class="text-gray-500">→ 0%</span> from last month
+                            {% endif %}
                         </div>
                     </div>
                     <div class="text-center">
                         <div class="text-2xl font-bold text-green-600">{{ deal_count }}</div>
                         <div class="text-sm text-gray-500">Open Deals</div>
                         <div class="text-xs text-gray-400 mt-1">
-                            <span class="text-green-600">↗ +0%</span> from last month
+                            {% if deals_change > 0 %}
+                            <span class="text-green-600">↗ +{{ deals_change }}%</span> from last month
+                            {% else if deals_change < 0 %}
+                            <span class="text-red-600">↘ {{ deals_change }}%</span> from last month
+                            {% else %}
+                            <span class="text-gray-500">→ 0%</span> from last month
+                            {% endif %}
                         </div>
                     </div>
                     <div class="text-center">
-                        <div class="text-2xl font-bold text-yellow-600">0%</div>
+                        <div class="text-2xl font-bold text-yellow-600">{{ win_rate }}%</div>
                         <div class="text-sm text-gray-500">Win Rate</div>
                         <div class="text-xs text-gray-400 mt-1">
+                            {% if win_rate_change > 0 %}
+                            <span class="text-green-600">↗ +{{ win_rate_change }}%</span> from last month
+                            {% else if win_rate_change < 0 %}
+                            <span class="text-red-600">↘ {{ win_rate_change }}%</span> from last month
+                            {% else %}
                             <span class="text-gray-500">→ 0%</span> from last month
+                            {% endif %}
                         </div>
                     </div>
                     <div class="text-center">
-                        <div class="text-2xl font-bold text-purple-600">0</div>
+                        <div class="text-2xl font-bold text-purple-600">{{ activities_this_month }}</div>
                         <div class="text-sm text-gray-500">Activities This Month</div>
                         <div class="text-xs text-gray-400 mt-1">
-                            <span class="text-green-600">↗ +0%</span> from last month
+                            {% if activities_change > 0 %}
+                            <span class="text-green-600">↗ +{{ activities_change }}%</span> from last month
+                            {% else if activities_change < 0 %}
+                            <span class="text-red-600">↘ {{ activities_change }}%</span> from last month
+                            {% else %}
+                            <span class="text-gray-500">→ 0%</span> from last month
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -369,37 +393,37 @@
             <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                 <div>
                     <h3 class="text-lg font-medium text-gray-900">Recent Customers</h3>
-                    <p class="text-sm text-gray-500">Latest customer additions</p>
-                </div>
-                <a href="/crm/customers" class="text-indigo-600 hover:text-indigo-500 text-sm font-medium">
-                    View all
-                </a>
-            </div>
-            <div class="overflow-hidden">
-                {% if customer_count == 0 %}
-                <div class="p-6 text-center text-gray-500">
-                    <div class="text-gray-400 text-4xl mb-2">🏢</div>
-                    <p class="text-sm">No customers yet</p>
-                    <p class="text-xs text-gray-400 mt-1">Start building your customer base</p>
-                    <a href="/crm/customers/new" 
-                       class="mt-3 inline-block bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
-                        Add First Customer
-                    </a>
-                </div>
-                {% else %}
-                <div class="px-6 py-4">
-                    <p class="text-center text-gray-500">Customer list will appear here when you have customer data.</p>
-                </div>
-                {% endif %}
-            </div>
-            {% if customer_count > 0 %}
-            <div class="px-6 py-3 bg-gray-50">
-                <a href="/crm/customers" class="text-sm text-indigo-600 hover:text-indigo-500 font-medium">
-                    View all customers →
-                </a>
-            </div>
-            {% endif %}
-        </div>
-    </div>
+                   <p class="text-sm text-gray-500">Latest customer additions</p>
+               </div>
+               <a href="/crm/customers" class="text-indigo-600 hover:text-indigo-500 text-sm font-medium">
+                   View all
+               </a>
+           </div>
+           <div class="overflow-hidden">
+               {% if customer_count == 0 %}
+               <div class="p-6 text-center text-gray-500">
+                   <div class="text-gray-400 text-4xl mb-2">🏢</div>
+                   <p class="text-sm">No customers yet</p>
+                   <p class="text-xs text-gray-400 mt-1">Start building your customer base</p>
+                   <a href="/crm/customers/new" 
+                      class="mt-3 inline-block bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
+                       Add First Customer
+                   </a>
+               </div>
+               {% else %}
+               <div class="px-6 py-4">
+                   <p class="text-center text-gray-500">Customer list will appear here when you have customer data.</p>
+               </div>
+               {% endif %}
+           </div>
+           {% if customer_count > 0 %}
+           <div class="px-6 py-3 bg-gray-50">
+               <a href="/crm/customers" class="text-sm text-indigo-600 hover:text-indigo-500 font-medium">
+                   View all customers →
+               </a>
+           </div>
+           {% endif %}
+       </div>
+   </div>
 </div>
 {% endblock %}
