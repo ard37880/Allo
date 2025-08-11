@@ -6,7 +6,6 @@
 
 {% block content %}
 <div class="min-h-screen bg-gray-50">
-    <!-- Navigation -->
     <nav class="bg-white shadow">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
@@ -24,7 +23,6 @@
         </div>
     </nav>
 
-    <!-- Main Content -->
     <div class="max-w-3xl mx-auto py-6 sm:px-6 lg:px-8">
         <div class="bg-white shadow rounded-lg">
             <div class="px-6 py-4 border-b border-gray-200">
@@ -33,10 +31,9 @@
                 </h3>
             </div>
 
-            <form action="{% if deal.is_some() %}/crm/deals/{{ deal.as_ref().unwrap().id }}{% else %}/crm/deals{% endif %}" 
+            <form action="{% if deal.is_some() %}/crm/deals/{{ deal.as_ref().unwrap().id }}{% else %}/crm/deals{% endif %}"
                     method="POST" class="p-6 space-y-6">
 
-                <!-- Deal Information -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="md:col-span-2">
                         <label for="title" class="block text-sm font-medium text-gray-700">
@@ -55,7 +52,7 @@
                                 class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                             <option value="">Select Customer</option>
                             {% for customer in customers %}
-                            <option value="{{ customer.id }}" 
+                            <option value="{{ customer.id }}"
                                 {% if customer_id.is_some() && customer_id.unwrap() == customer.id %}selected{% endif %}
                                 {% if deal.is_some() && deal.as_ref().unwrap().customer_id == customer.id %}selected{% endif %}>
                                 {{ customer.company_name }}
@@ -107,7 +104,6 @@
                         </label>
                         <select id="stage" name="stage" required
                                 class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-                            <option value="prospect" {% if !deal.is_some() || deal.as_ref().unwrap().stage == "prospect" %}selected{% endif %}>Prospect</option>
                             <option value="negotiation" {% if deal.is_some() && deal.as_ref().unwrap().stage == "negotiation" %}selected{% endif %}>Negotiation</option>
                             <option value="closed_won" {% if deal.is_some() && deal.as_ref().unwrap().stage == "closed_won" %}selected{% endif %}>Closed Won</option>
                             <option value="closed_lost" {% if deal.is_some() && deal.as_ref().unwrap().stage == "closed_lost" %}selected{% endif %}>Closed Lost</option>
@@ -132,13 +128,12 @@
                     </div>
                 </div>
 
-                <!-- Form Actions -->
                 <div class="flex justify-end space-x-3 pt-6 border-t">
-                    <a href="/crm/deals" 
+                    <a href="/crm/deals"
                        class="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400">
                         Cancel
                     </a>
-                    <button type="submit" 
+                    <button type="submit"
                             class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
                         {% if deal.is_some() %}Update Deal{% else %}Create Deal{% endif %}
                     </button>
@@ -153,10 +148,10 @@ function updateContacts() {
     const customerSelect = document.getElementById('customer_id');
     const contactSelect = document.getElementById('contact_id');
     const customerId = customerSelect.value;
-    
+
     // Clear existing contacts
     contactSelect.innerHTML = '<option value="">Select Contact</option>';
-    
+
     if (customerId) {
         // Fetch contacts for the selected customer
         fetch(`/api/customers/${customerId}/contacts`)

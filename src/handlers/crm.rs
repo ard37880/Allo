@@ -819,11 +819,11 @@ pub async fn create_deal(
     let customer_id = Uuid::parse_str(&form.customer_id).map_err(|_| StatusCode::BAD_REQUEST)?;
 
     let contact_id = if let Some(contact_str) = form.contact_id {
-        if contact_str.trim().is_empty() { None } 
+        if contact_str.trim().is_empty() { None }
         else { Some(Uuid::parse_str(&contact_str).map_err(|_| StatusCode::BAD_REQUEST)?) }
     } else { None };
 
-    let probability = match form.stage.as_str() {
+    let probability: i32 = match form.stage.as_str() {
         "prospect" => 25,
         "negotiation" => 75,
         "closed_won" => 100,
@@ -841,16 +841,16 @@ pub async fn create_deal(
         RETURNING *
         "#,
     )
-    .bind(&customer_id)
-    .bind(&contact_id)
+    .bind(customer_id)
+    .bind(contact_id)
     .bind(&form.title)
-    .bind(&form.description)
-    .bind(&form.value)
+    .bind(form.description)
+    .bind(form.value)
     .bind(&form.currency)
     .bind(&form.stage)
-    .bind(&probability)
-    .bind(&form.expected_close_date)
-    .bind(&user.id)
+    .bind(probability)
+    .bind(form.expected_close_date)
+    .bind(user.id)
     .fetch_one(&db)
     .await
     .map_err(|e| {
