@@ -831,16 +831,6 @@ pub async fn create_deal(
         _ => 50,
     };
 
-    let value = match form.value {
-        Some(v) if !v.is_empty() => v.parse::<rust_decimal::Decimal>().ok(),
-        _ => None,
-    };
-
-    let expected_close_date = match form.expected_close_date {
-        Some(d) if !d.is_empty() => NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok(),
-        _ => None,
-    };
-
     let deal = sqlx::query_as::<_, Deal>(
         r#"
         INSERT INTO deals (
@@ -855,11 +845,11 @@ pub async fn create_deal(
     .bind(&contact_id)
     .bind(&form.title)
     .bind(&form.description)
-    .bind(&value)
+    .bind(&form.value)
     .bind(&form.currency)
     .bind(&form.stage)
     .bind(&probability)
-    .bind(&expected_close_date)
+    .bind(&form.expected_close_date)
     .bind(&user.id)
     .fetch_one(&db)
     .await
@@ -890,16 +880,6 @@ pub async fn update_deal(
         "closed_lost" => 0,
         _ => 50,
     };
-
-    let value = match form.value {
-        Some(v) if !v.is_empty() => v.parse::<rust_decimal::Decimal>().ok(),
-        _ => None,
-    };
-
-    let expected_close_date = match form.expected_close_date {
-        Some(d) if !d.is_empty() => NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok(),
-        _ => None,
-    };
  
     sqlx::query(
         r#"
@@ -914,11 +894,11 @@ pub async fn update_deal(
     .bind(&contact_id)
     .bind(&form.title)
     .bind(&form.description)
-    .bind(&value)
+    .bind(&form.value)
     .bind(&form.currency)
     .bind(&form.stage)
     .bind(&probability)
-    .bind(&expected_close_date)
+    .bind(&form.expected_close_date)
     .execute(&db)
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
