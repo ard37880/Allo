@@ -3,7 +3,7 @@ mod handlers;
 mod middleware;
 mod models;
 mod utils;
-mod filters; // Add this line
+mod filters;
 
 use axum::{
     body::Bytes,
@@ -123,8 +123,7 @@ fn create_router(db: Database) -> Router {
         
         // Contacts
         .route("/crm/contacts", post(handlers::crm::create_contact))
-        .route("/crm/customers/:customer_id/contacts/:contact_id/delete", 
-               get(handlers::crm::delete_contact))
+        .route("/crm/customers/:customer_id/contacts/:contact_id/delete", get(handlers::crm::delete_contact))
         
         // Deals routes
         .route("/crm/deals", get(handlers::crm::deals_list))
@@ -133,12 +132,16 @@ fn create_router(db: Database) -> Router {
         .route("/crm/deals/:id", get(handlers::crm::deal_detail))
         .route("/crm/deals/:id/edit", get(handlers::crm::deal_edit_form))
         .route("/crm/deals/:id", post(handlers::crm::update_deal))
-        
+        .route("/crm/deals/:id/delete", get(handlers::crm::delete_deal))
+
         // Activities routes
         .route("/crm/activities", get(handlers::crm::activities_list))
         .route("/crm/activities/new", get(handlers::crm::activity_form))
         .route("/crm/activities", post(handlers::crm::create_activity))
-        
+        .route("/crm/activities/:id/delete", get(handlers::crm::delete_activity))
+        .route("/crm/activities/:id/edit", get(handlers::crm::activity_edit_form))
+        .route("/crm/activities/:id", post(handlers::crm::update_activity))
+
         // Reports routes
         .route("/crm/reports", get(handlers::reports::reports_list))
         

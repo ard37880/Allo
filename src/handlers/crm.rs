@@ -12,7 +12,8 @@ use chrono::{Utc, NaiveDate, NaiveDateTime};
 use crate::{
     database::Database,
     models::{Customer, CustomerTemplate, Contact, Deal, Activity, CustomerDisplay, ContactDisplay, DealDisplay, ActivityDisplay},
-    middleware::get_current_user,
+    middleware::{get_current_user, CurrentUser},
+    filters,
 };
 
 #[derive(Template)]
@@ -59,12 +60,14 @@ struct CustomerDetailTemplate {
     contacts: Vec<ContactDisplay>,
     deals: Vec<DealDisplay>,
     activities: Vec<ActivityDisplay>,
+    current_user: CurrentUser,
 }
 
 #[derive(Template)]
 #[template(path = "crm/deals.html")]
 struct DealsTemplate {
     deals: Vec<DealDisplay>,
+    current_user: CurrentUser,
 }
 
 #[derive(Template)]
@@ -88,6 +91,7 @@ struct DealDetailTemplate {
 #[template(path = "crm/activities.html")]
 struct ActivitiesTemplate {
     activities: Vec<ActivityDisplay>,
+    current_user: CurrentUser,
 }
 
 #[derive(Template)]
@@ -142,10 +146,10 @@ pub struct DealForm {
     contact_id: Option<String>,
     title: String,
     description: Option<String>,
-    value: Option<rust_decimal::Decimal>,
+    value: Option<String>,
     currency: String,
     stage: String,
-    expected_close_date: Option<NaiveDate>,
+    expected_close_date: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -408,7 +412,7 @@ pub async fn crm_dashboard(State(db): State<Database>) -> Result<Html<String>, S
 // Customers List
 pub async fn customers_list(State(db): State<Database>) -> Result<Html<String>, StatusCode> {
     let customers = sqlx::query_as::<_, Customer>(
-        "SELECT * FROM customers ORDER BY company_name"
+        "SELECT * FROM customers ORDER BY created_at DESC"
     )
     .fetch_all(&db)
     .await
@@ -524,8 +528,13 @@ pub async fn update_customer(
 // Customer Detail
 pub async fn customer_detail(
     State(db): State<Database>,
+    cookies: Cookies,
     Path(id): Path<Uuid>,
 ) -> Result<Html<String>, StatusCode> {
+    let current_user = get_current_user(cookies, &db)
+        .await
+        .ok_or(StatusCode::UNAUTHORIZED)?;
+
     let customer = sqlx::query_as::<_, Customer>(
         "SELECT * FROM customers WHERE id = $1"
     )
@@ -572,6 +581,7 @@ pub async fn customer_detail(
         contacts,
         deals,
         activities,
+        current_user,
     };
     
     Ok(Html(template.render().unwrap()))
@@ -670,7 +680,12 @@ pub async fn delete_contact(
 // Deals functions
 pub async fn deals_list(
     State(db): State<Database>,
+    cookies: Cookies,
 ) -> Result<Html<String>, StatusCode> {
+    let current_user = get_current_user(cookies, &db)
+        .await
+        .ok_or(StatusCode::UNAUTHORIZED)?;
+
     let deals = sqlx::query_as::<_, Deal>(
         "SELECT * FROM deals ORDER BY created_at DESC"
     )
@@ -681,7 +696,7 @@ pub async fn deals_list(
     .map(DealDisplay::from)
     .collect();
 
-    let template = DealsTemplate { deals };
+    let template = DealsTemplate { deals, current_user };
     Ok(Html(template.render().unwrap()))
 }
 
@@ -795,134 +810,144 @@ pub async fn deal_edit_form(
 }
 
 pub async fn create_deal(
-   State(db): State<Database>,
-   cookies: Cookies,
-   Form(form): Form<DealForm>,
+    State(db): State<Database>,
+    cookies: Cookies,
+    Form(form): Form<DealForm>,
 ) -> Result<Redirect, StatusCode> {
-   let user = get_current_user(cookies, &db).await
-       .ok_or(StatusCode::UNAUTHORIZED)?;
+    let user = get_current_user(cookies, &db).await.ok_or(StatusCode::UNAUTHORIZED)?;
 
-   // Parse customer_id
-   let customer_id = Uuid::parse_str(&form.customer_id)
-       .map_err(|_| StatusCode::BAD_REQUEST)?;
+    let customer_id = Uuid::parse_str(&form.customer_id).map_err(|_| StatusCode::BAD_REQUEST)?;
 
-   // Parse contact_id if provided and not empty
-   let contact_id = if let Some(contact_str) = form.contact_id {
-       if contact_str.trim().is_empty() {
-           None
-       } else {
-           Some(Uuid::parse_str(&contact_str).map_err(|_| StatusCode::BAD_REQUEST)?)
-       }
-   } else {
-       None
-   };
+    let contact_id = if let Some(contact_str) = form.contact_id {
+        if contact_str.trim().is_empty() { None } 
+        else { Some(Uuid::parse_str(&contact_str).map_err(|_| StatusCode::BAD_REQUEST)?) }
+    } else { None };
 
-   // Default probability based on stage
-   let probability = match form.stage.as_str() {
-       "prospect" => 25,
-       "negotiation" => 75,
-       "closed_won" => 100,
-       "closed_lost" => 0,
-       _ => 50,
-   };
+    let probability = match form.stage.as_str() {
+        "prospect" => 25,
+        "negotiation" => 75,
+        "closed_won" => 100,
+        "closed_lost" => 0,
+        _ => 50,
+    };
 
-   let deal = sqlx::query_as::<_, Deal>(
-       r#"
-       INSERT INTO deals (
-           customer_id, contact_id, title, description, value,
-           currency, stage, probability, expected_close_date, created_by
-       )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-       RETURNING *
-       "#,
-   )
-   .bind(&customer_id)
-   .bind(&contact_id)
-   .bind(&form.title)
-   .bind(&form.description)
-   .bind(&form.value)
-   .bind(&form.currency)
-   .bind(&form.stage)
-   .bind(&probability)
-   .bind(&form.expected_close_date)
-   .bind(&user.id)
-   .fetch_one(&db)
-   .await
-   .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let value = match form.value {
+        Some(v) if !v.is_empty() => v.parse::<rust_decimal::Decimal>().ok(),
+        _ => None,
+    };
 
-   Ok(Redirect::to(&format!("/crm/deals/{}", deal.id)))
+    let expected_close_date = match form.expected_close_date {
+        Some(d) if !d.is_empty() => NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok(),
+        _ => None,
+    };
+
+    let deal = sqlx::query_as::<_, Deal>(
+        r#"
+        INSERT INTO deals (
+            customer_id, contact_id, title, description, value,
+            currency, stage, probability, expected_close_date, created_by
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        RETURNING *
+        "#,
+    )
+    .bind(&customer_id)
+    .bind(&contact_id)
+    .bind(&form.title)
+    .bind(&form.description)
+    .bind(&value)
+    .bind(&form.currency)
+    .bind(&form.stage)
+    .bind(&probability)
+    .bind(&expected_close_date)
+    .bind(&user.id)
+    .fetch_one(&db)
+    .await
+    .map_err(|e| {
+        eprintln!("Error creating deal: {}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    Ok(Redirect::to(&format!("/crm/deals/{}", deal.id)))
 }
 
 pub async fn update_deal(
-   State(db): State<Database>,
-   Path(id): Path<Uuid>,
-   Form(form): Form<DealForm>,
-) -> Result<Redirect, StatusCode> {
-   // Parse customer_id
-   let customer_id = Uuid::parse_str(&form.customer_id)
-       .map_err(|_| StatusCode::BAD_REQUEST)?;
+    State(db): State<Database>,
+    Path(id): Path<Uuid>,
+    Form(form): Form<DealForm>,
+ ) -> Result<Redirect, StatusCode> {
+    let customer_id = Uuid::parse_str(&form.customer_id).map_err(|_| StatusCode::BAD_REQUEST)?;
+ 
+    let contact_id = if let Some(contact_str) = form.contact_id {
+        if contact_str.trim().is_empty() { None }
+        else { Some(Uuid::parse_str(&contact_str).map_err(|_| StatusCode::BAD_REQUEST)?) }
+    } else { None };
+ 
+    let probability = match form.stage.as_str() {
+        "prospect" => 25,
+        "negotiation" => 75,
+        "closed_won" => 100,
+        "closed_lost" => 0,
+        _ => 50,
+    };
 
-   // Parse contact_id if provided and not empty
-   let contact_id = if let Some(contact_str) = form.contact_id {
-       if contact_str.trim().is_empty() {
-           None
-       } else {
-           Some(Uuid::parse_str(&contact_str).map_err(|_| StatusCode::BAD_REQUEST)?)
-       }
-   } else {
-       None
-   };
+    let value = match form.value {
+        Some(v) if !v.is_empty() => v.parse::<rust_decimal::Decimal>().ok(),
+        _ => None,
+    };
 
-   // Default probability based on stage
-   let probability = match form.stage.as_str() {
-       "prospect" => 25,
-       "negotiation" => 75,
-       "closed_won" => 100,
-       "closed_lost" => 0,
-       _ => 50,
-   };
-
-   sqlx::query(
-       r#"
-       UPDATE deals SET
-           customer_id = $2, contact_id = $3, title = $4, description = $5, value = $6,
-           currency = $7, stage = $8, probability = $9, expected_close_date = $10, updated_at = NOW()
-       WHERE id = $1
-       "#,
-   )
-   .bind(id)
-   .bind(&customer_id)
-   .bind(&contact_id)
-   .bind(&form.title)
-   .bind(&form.description)
-   .bind(&form.value)
-   .bind(&form.currency)
-   .bind(&form.stage)
-   .bind(&probability)
-   .bind(&form.expected_close_date)
-   .execute(&db)
-   .await
-   .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-   Ok(Redirect::to(&format!("/crm/deals/{}", id)))
-}
+    let expected_close_date = match form.expected_close_date {
+        Some(d) if !d.is_empty() => NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok(),
+        _ => None,
+    };
+ 
+    sqlx::query(
+        r#"
+        UPDATE deals SET
+            customer_id = $2, contact_id = $3, title = $4, description = $5, value = $6,
+            currency = $7, stage = $8, probability = $9, expected_close_date = $10, updated_at = NOW()
+        WHERE id = $1
+        "#,
+    )
+    .bind(id)
+    .bind(&customer_id)
+    .bind(&contact_id)
+    .bind(&form.title)
+    .bind(&form.description)
+    .bind(&value)
+    .bind(&form.currency)
+    .bind(&form.stage)
+    .bind(&probability)
+    .bind(&expected_close_date)
+    .execute(&db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+ 
+    Ok(Redirect::to(&format!("/crm/deals/{}", id)))
+ }
+ 
 
 // Activities functions
 pub async fn activities_list(
-   State(db): State<Database>,
+    State(db): State<Database>,
+    cookies: Cookies,
 ) -> Result<Html<String>, StatusCode> {
-   let activities = sqlx::query_as::<_, Activity>(
-       "SELECT * FROM activities ORDER BY activity_date DESC"
-   )
-   .fetch_all(&db)
-   .await
-   .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-   .into_iter()
-   .map(ActivityDisplay::from)
-   .collect();
+    let current_user = get_current_user(cookies, &db)
+        .await
+        .ok_or(StatusCode::UNAUTHORIZED)?;
 
-   let template = ActivitiesTemplate { activities };
-   Ok(Html(template.render().unwrap()))
+    let activities = sqlx::query_as::<_, Activity>(
+       "SELECT * FROM activities ORDER BY activity_date DESC"
+    )
+    .fetch_all(&db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+    .into_iter()
+    .map(ActivityDisplay::from)
+    .collect();
+
+    let template = ActivitiesTemplate { activities, current_user };
+    Ok(Html(template.render().unwrap()))
 }
 
 pub async fn activity_form(
@@ -1077,4 +1102,139 @@ pub async fn get_customer_contacts(
    .collect();
 
    Ok(axum::Json(contacts))
+}
+
+pub async fn delete_deal(
+    State(db): State<Database>,
+    cookies: Cookies,
+    Path(deal_id): Path<Uuid>,
+) -> Result<Redirect, StatusCode> {
+    let current_user = get_current_user(cookies, &db)
+        .await
+        .ok_or(StatusCode::UNAUTHORIZED)?;
+
+    if !current_user.permissions.contains(&"team:manage_roles".to_string()) {
+        return Err(StatusCode::FORBIDDEN);
+    }
+
+    sqlx::query("DELETE FROM deals WHERE id = $1")
+        .bind(deal_id)
+        .execute(&db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(Redirect::to("/crm/deals"))
+}
+
+pub async fn delete_activity(
+    State(db): State<Database>,
+    cookies: Cookies,
+    Path(activity_id): Path<Uuid>,
+) -> Result<Redirect, StatusCode> {
+    let current_user = get_current_user(cookies, &db)
+        .await
+        .ok_or(StatusCode::UNAUTHORIZED)?;
+
+    if !current_user.permissions.contains(&"team:manage_roles".to_string()) {
+        return Err(StatusCode::FORBIDDEN);
+    }
+
+    sqlx::query("DELETE FROM activities WHERE id = $1")
+        .bind(activity_id)
+        .execute(&db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(Redirect::to("/crm/activities"))
+}
+
+pub async fn activity_edit_form(
+    State(db): State<Database>,
+    Path(activity_id): Path<Uuid>,
+) -> Result<Html<String>, StatusCode> {
+    let activity = sqlx::query_as::<_, Activity>("SELECT * FROM activities WHERE id = $1")
+        .bind(activity_id)
+        .fetch_one(&db)
+        .await
+        .map_err(|_| StatusCode::NOT_FOUND)?;
+
+    let customers = sqlx::query_as::<_, Customer>("SELECT * FROM customers ORDER BY company_name")
+        .fetch_all(&db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let contacts = sqlx::query_as::<_, Contact>("SELECT * FROM contacts WHERE customer_id = $1 ORDER BY first_name")
+        .bind(activity.customer_id)
+        .fetch_all(&db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let deals = sqlx::query_as::<_, Deal>("SELECT * FROM deals WHERE customer_id = $1 ORDER BY title")
+        .bind(activity.customer_id)
+        .fetch_all(&db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let template = ActivityFormTemplate {
+        activity: Some(activity),
+        customers,
+        contacts,
+        deals,
+        customer_id: None,
+        deal_id: None,
+    };
+
+    Ok(Html(template.render().unwrap()))
+}
+
+pub async fn update_activity(
+    State(db): State<Database>,
+    Path(activity_id): Path<Uuid>,
+    Form(form): Form<ActivityForm>,
+) -> Result<Redirect, StatusCode> {
+    let customer_id = Uuid::parse_str(&form.customer_id).map_err(|_| StatusCode::BAD_REQUEST)?;
+
+    let contact_id = if let Some(contact_str) = form.contact_id {
+        if contact_str.trim().is_empty() { None } 
+        else { Some(Uuid::parse_str(&contact_str).map_err(|_| StatusCode::BAD_REQUEST)?) }
+    } else { None };
+
+    let deal_id = if let Some(deal_str) = form.deal_id {
+        if deal_str.trim().is_empty() { None } 
+        else { Some(Uuid::parse_str(&deal_str).map_err(|_| StatusCode::BAD_REQUEST)?) }
+    } else { None };
+
+    let activity_date = if form.activity_date.is_empty() {
+        Utc::now()
+    } else {
+        NaiveDateTime::parse_from_str(&form.activity_date, "%Y-%m-%dT%H:%M")
+            .map_err(|_| StatusCode::BAD_REQUEST)?
+            .and_utc()
+    };
+
+    let completed = form.completed.is_some();
+
+    sqlx::query(
+        r#"
+        UPDATE activities SET
+            customer_id = $2, contact_id = $3, deal_id = $4, activity_type = $5, subject = $6,
+            description = $7, activity_date = $8, duration_minutes = $9, completed = $10
+        WHERE id = $1
+        "#,
+    )
+    .bind(activity_id)
+    .bind(&customer_id)
+    .bind(&contact_id)
+    .bind(&deal_id)
+    .bind(&form.activity_type)
+    .bind(&form.subject)
+    .bind(&form.description)
+    .bind(&activity_date)
+    .bind(&form.duration_minutes)
+    .bind(completed)
+    .execute(&db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(Redirect::to("/crm/activities"))
 }

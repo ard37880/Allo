@@ -94,6 +94,9 @@
                                 {% if activity.duration_minutes != "" %}
                                 <span>{{ activity.duration_minutes }} minutes</span>
                                 {% endif %}
+                                {% if current_user.permissions|contains("team:manage_roles") %}
+                                <a href="/crm/activities/{{ activity.id }}/delete" class="text-red-500 hover:text-red-700" onclick="return confirm('Are you sure you want to delete this activity?')">Delete</a>
+                                {% endif %}
                             </div>
                         </div>
                     </div>

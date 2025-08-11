@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Form, Path, State},
+    extract::{Path, State},
     http::StatusCode,
     response::{Html, Redirect},
 };
@@ -523,33 +523,60 @@ pub async fn delete_user(
     State(db): State<Database>,
     Path(user_id): Path<Uuid>,
 ) -> Result<Redirect, StatusCode> {
-    let current_user = get_current_user(cookies, &db).await
-        .ok_or(StatusCode::UNAUTHORIZED)?;
+    let current_user = get_current_user(cookies, &db).await.ok_or(StatusCode::UNAUTHORIZED)?;
 
     if !current_user.has_team_delete {
         return Err(StatusCode::FORBIDDEN);
     }
 
-    // Prevent users from deleting themselves
     if current_user.id == user_id {
         return Err(StatusCode::BAD_REQUEST);
     }
 
-    // Get user info for audit log
-    let user = sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1")
+    let user_to_delete = sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1")
         .bind(user_id)
         .fetch_one(&db)
         .await
         .map_err(|_| StatusCode::NOT_FOUND)?;
 
-    // Delete user (cascade will handle user_roles)
-    sqlx::query("DELETE FROM users WHERE id = $1")
-        .bind(user_id)
-        .execute(&db)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let mut tx = db.begin().await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    // Create audit log
+    let admin_id = current_user.id;
+
+    sqlx::query("UPDATE deals SET created_by = $1 WHERE created_by = $2")
+        .bind(admin_id).bind(user_id).execute(&mut *tx).await
+        .map_err(|e| { eprintln!("Error updating deals: {}", e); StatusCode::INTERNAL_SERVER_ERROR })?;
+
+    sqlx::query("UPDATE activities SET created_by = $1 WHERE created_by = $2")
+        .bind(admin_id).bind(user_id).execute(&mut *tx).await
+        .map_err(|e| { eprintln!("Error updating activities: {}", e); StatusCode::INTERNAL_SERVER_ERROR })?;
+
+    sqlx::query("UPDATE roles SET created_by = $1 WHERE created_by = $2")
+        .bind(admin_id).bind(user_id).execute(&mut *tx).await
+        .map_err(|e| { eprintln!("Error updating roles: {}", e); StatusCode::INTERNAL_SERVER_ERROR })?;
+        
+    sqlx::query("UPDATE user_roles SET assigned_by = $1 WHERE assigned_by = $2")
+        .bind(admin_id).bind(user_id).execute(&mut *tx).await
+        .map_err(|e| { eprintln!("Error updating user_roles: {}", e); StatusCode::INTERNAL_SERVER_ERROR })?;
+
+    sqlx::query("UPDATE users SET locked_by = NULL, locked_at = NULL WHERE locked_by = $1")
+        .bind(user_id).execute(&mut *tx).await
+        .map_err(|e| { eprintln!("Error updating users locked_by: {}", e); StatusCode::INTERNAL_SERVER_ERROR })?;
+    
+    sqlx::query("UPDATE audit_logs SET user_id = NULL WHERE user_id = $1")
+        .bind(user_id).execute(&mut *tx).await
+        .map_err(|e| { eprintln!("Error updating audit_logs: {}", e); StatusCode::INTERNAL_SERVER_ERROR })?;
+
+    sqlx::query("DELETE FROM user_roles WHERE user_id = $1")
+        .bind(user_id).execute(&mut *tx).await
+        .map_err(|e| { eprintln!("Error deleting from user_roles: {}", e); StatusCode::INTERNAL_SERVER_ERROR })?;
+
+    sqlx::query("DELETE FROM users WHERE id = $1")
+        .bind(user_id).execute(&mut *tx).await
+        .map_err(|e| { eprintln!("Error deleting user: {}", e); StatusCode::INTERNAL_SERVER_ERROR })?;
+
+    tx.commit().await.map_err(|e| { eprintln!("Error committing transaction: {}", e); StatusCode::INTERNAL_SERVER_ERROR })?;
+    
     let _ = create_audit_log(
         &db,
         current_user.id,
@@ -557,9 +584,9 @@ pub async fn delete_user(
         "user".to_string(),
         Some(user_id),
         Some(serde_json::json!({
-            "email": user.email,
-            "first_name": user.first_name,
-            "last_name": user.last_name
+            "email": user_to_delete.email,
+            "first_name": user_to_delete.first_name,
+            "last_name": user_to_delete.last_name
         })),
         None,
     ).await;
@@ -969,7 +996,7 @@ async fn create_audit_log(
         r#"
         INSERT INTO audit_logs (user_id, action, resource_type, resource_id, old_values, new_values)
         VALUES ($1, $2, $3, $4, $5, $6)
-        "#
+        "#,
     )
     .bind(user_id)
     .bind(action)
