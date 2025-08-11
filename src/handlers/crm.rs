@@ -146,10 +146,10 @@ pub struct DealForm {
     contact_id: Option<String>,
     title: String,
     description: Option<String>,
-    value: Option<String>,
+    value: Option<rust_decimal::Decimal>,
     currency: String,
     stage: String,
-    expected_close_date: Option<String>,
+    expected_close_date: Option<NaiveDate>,
 }
 
 #[derive(Deserialize)]
