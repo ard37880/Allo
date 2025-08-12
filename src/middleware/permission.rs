@@ -22,6 +22,7 @@ pub struct CurrentUser {
     pub has_team_write: bool,
     pub has_team_delete: bool,
     pub has_manage_roles: bool,
+    pub has_expense_approval: bool, // NEW: For approve/deny buttons
 }
 
 impl CurrentUser {
@@ -30,6 +31,8 @@ impl CurrentUser {
         let has_team_write = permissions.contains(&"team:write".to_string());
         let has_team_delete = permissions.contains(&"team:delete".to_string());
         let has_manage_roles = permissions.contains(&"team:manage_roles".to_string());
+        // NEW: Check for the specific permission to approve expenses
+        let has_expense_approval = permissions.contains(&"expenses:approve".to_string());
 
         Self {
             id: user.id,
@@ -43,6 +46,7 @@ impl CurrentUser {
             has_team_write,
             has_team_delete,
             has_manage_roles,
+            has_expense_approval, // NEW
         }
     }
 }

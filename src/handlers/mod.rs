@@ -2,6 +2,8 @@ pub mod auth;
 pub mod crm;
 pub mod reports;
 pub mod team;
+pub mod expenses;
+pub mod dashboard; 
 
 use axum::{
     extract::State,

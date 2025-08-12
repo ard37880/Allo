@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if expense.is_some() %}Edit Expense{% else %}Add Expense{% endif %} - Allo
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <nav class="bg-white shadow">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center space-x-8">
+                    <a href="/dashboard" class="text-xl font-semibold text-gray-900">Allo</a>
+                    <div class="flex space-x-4">
+                        <a href="/expenses" class="text-indigo-600 font-medium">Expenses</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-3xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">
+                    {% if expense.is_some() %}Edit Expense{% else %}Add New Expense{% endif %}
+                </h3>
+            </div>
+            <form action="{% if expense.is_some() %}/expenses/{{ expense.as_ref().unwrap().id }}{% else %}/expenses{% endif %}" method="POST" enctype="multipart/form-data" class="p-6 space-y-6">
+                <div>
+                    <label for="category_id" class="block text-sm font-medium text-gray-700">Category</label>
+                    <select id="category_id" name="category_id" required class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                        {% for category in categories %}
+                        <option value="{{ category.id }}" {% if expense.is_some() && expense.as_ref().unwrap().category_id == category.id %}selected{% endif %}>
+                            {{ category.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="amount" class="block text-sm font-medium text-gray-700">Amount</label>
+                    <input type="number" name="amount" id="amount" required step="0.01" value="{% if expense.is_some() %}{{ expense.as_ref().unwrap().amount }}{% endif %}" class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label for="expense_date" class="block text-sm font-medium text-gray-700">Expense Date</label>
+                    <input type="date" name="expense_date" id="expense_date" required value="{% if expense.is_some() %}{{ expense.as_ref().unwrap().expense_date }}{% endif %}" class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label for="customer_id" class="block text-sm font-medium text-gray-700">Customer (Optional)</label>
+                    <select id="customer_id" name="customer_id" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                        <option value="">None</option>
+                        {% for customer in customers %}
+                        <option value="{{ customer.id }}" {% if expense.is_some() && expense.as_ref().unwrap().customer_id.is_some() && expense.as_ref().unwrap().customer_id.unwrap() == customer.id %}selected{% endif %}>
+                            {{ customer.company_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+                    <textarea name="description" id="description" rows="3" class="mt-1 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md">{% if expense.is_some() %}{{ expense.as_ref().unwrap().description.as_deref().unwrap_or("") }}{% endif %}</textarea>
+                </div>
+                <div>
+                    <label for="receipt" class="block text-sm font-medium text-gray-700">Receipt {% if expense.is_some() %}(Upload new to replace){% endif %}</label>
+                    {% if expense.is_some() && expense.as_ref().unwrap().receipt_url.is_some() %}
+                    <p class="text-sm text-gray-500 mt-1">Current receipt: <a href="{{ expense.as_ref().unwrap().receipt_url.as_deref().unwrap() }}" target="_blank" class="text-indigo-600">View</a></p>
+                    {% endif %}
+                    <input type="file" name="receipt" id="receipt" accept=".png,.jpg,.jpeg" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                    
+                    <!-- MODIFIED: Image preview element -->
+                    <div class="mt-4">
+                        <img id="receipt-preview" src="" alt="Receipt Preview" class="hidden max-h-48 rounded-md shadow-sm"/>
+                    </div>
+                </div>
+                <div class="flex justify-end">
+                    <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        {% if expense.is_some() %}Update Expense{% else %}Save Expense{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODIFIED: JavaScript for image preview -->
+<script>
+    document.getElementById('receipt').addEventListener('change', function(event) {
+        const preview = document.getElementById('receipt-preview');
+        const file = event.target.files[0];
+        
+        if (file) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                preview.classList.remove('hidden');
+            }
+            
+            reader.readAsDataURL(file);
+        } else {
+            preview.src = '';
+            preview.classList.add('hidden');
+        }
+    });
+</script>
+{% endblock %}

@@ -109,7 +109,8 @@ fn create_router(db: Database) -> Router {
         .route("/logout", post(handlers::auth::logout))
 
         // Protected routes (authentication required)
-        .route("/dashboard", get(handlers::dashboard))
+        // MODIFIED: Correct path to the dashboard handler function
+        .route("/dashboard", get(handlers::dashboard::dashboard))
 
         // CRM routes
         .route("/crm", get(handlers::crm::crm_dashboard))
@@ -146,6 +147,16 @@ fn create_router(db: Database) -> Router {
 
         // Reports routes
         .route("/crm/reports", get(handlers::reports::reports_list))
+
+        // Expense Tracking Routes
+        .route("/expenses", get(handlers::expenses::expenses_list))
+        .route("/expenses/new", get(handlers::expenses::expense_form))
+        .route("/expenses", post(handlers::expenses::create_expense))
+        .route("/expenses/:id/edit", get(handlers::expenses::expense_edit_form))
+        .route("/expenses/:id", post(handlers::expenses::update_expense))
+        .route("/expenses/:id/delete", get(handlers::expenses::delete_expense))
+        .route("/expenses/:id/approve", get(handlers::expenses::approve_expense))
+        .route("/expenses/:id/deny", get(handlers::expenses::deny_expense))
 
         // Team management routes
         .route("/team", get(handlers::team::team_dashboard))

@@ -1,6 +1,7 @@
 pub mod user;
 pub mod crm;
 pub mod rbac;
+pub mod expense; // Add this line
 
 // Re-export only the types we actually use
 pub use user::{User, CreateUser};
@@ -14,3 +15,4 @@ pub use rbac::{
     Role, RoleDisplay, UserWithRoles,
     Permission, get_all_permissions
 };
+pub use expense::{Expense, ExpenseCategory, ExpenseDisplay}; // Add this line

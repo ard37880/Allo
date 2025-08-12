@@ -7,7 +7,7 @@ authors = ["HABB Corp <andrew.davis@habb.tech>"]
 [dependencies]
 tokio = { version = "1.0", features = ["full"] }
 axum = "0.7"
-axum-extra = { version = "0.9", features = ["cookie"] }
+axum-extra = { version = "0.9", features = ["cookie", "multipart"] }
 tower = "0.4"
 tower-http = { version = "0.5", features = ["fs", "cors", "trace"] }
 tower-cookies = "0.10"
