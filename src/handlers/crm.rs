@@ -405,7 +405,7 @@ pub async fn crm_dashboard(State(db): State<Database>) -> Result<Html<String>, S
         win_rate_change,
         activities_change,
     };
-    
+
     Ok(Html(template.render().unwrap()))
 }
 
@@ -1217,4 +1217,75 @@ pub async fn update_activity(
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     Ok(Redirect::to("/crm/activities"))
+}
+
+#[derive(Template)]
+#[template(path = "crm/contact_edit.html")]
+struct ContactEditTemplate {
+    customer: Customer,
+    contact: ContactDisplay,
+}
+
+pub async fn contact_edit_form(
+    State(db): State<Database>,
+    Path((customer_id, contact_id)): Path<(Uuid, Uuid)>,
+) -> Result<Html<String>, StatusCode> {
+    let customer = sqlx::query_as::<_, Customer>("SELECT * FROM customers WHERE id = $1")
+        .bind(customer_id)
+        .fetch_one(&db)
+        .await
+        .map_err(|_| StatusCode::NOT_FOUND)?;
+
+    let contact_db = sqlx::query_as::<_, Contact>("SELECT * FROM contacts WHERE id = $1 AND customer_id = $2")
+        .bind(contact_id)
+        .bind(customer_id)
+        .fetch_one(&db)
+        .await
+        .map_err(|_| StatusCode::NOT_FOUND)?;
+
+    let contact: ContactDisplay = contact_db.into();
+
+    let template = ContactEditTemplate { customer, contact };
+    Ok(Html(template.render().unwrap()))
+}
+
+pub async fn update_contact(
+    State(db): State<Database>,
+    Path((customer_id, contact_id)): Path<(Uuid, Uuid)>,
+    Form(form): Form<ContactForm>,
+) -> Result<Redirect, StatusCode> {
+    let is_primary = form.is_primary.is_some();
+
+    if is_primary {
+        sqlx::query("UPDATE contacts SET is_primary = false WHERE customer_id = $1 AND id != $2")
+            .bind(customer_id)
+            .bind(contact_id)
+            .execute(&db)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    }
+
+    sqlx::query(
+        r#"
+        UPDATE contacts SET
+            first_name = $1, last_name = $2, title = $3, email = $4, phone = $5,
+            mobile = $6, is_primary = $7, notes = $8, updated_at = NOW()
+        WHERE id = $9 AND customer_id = $10
+        "#,
+    )
+    .bind(&form.first_name)
+    .bind(&form.last_name)
+    .bind(&form.title)
+    .bind(&form.email)
+    .bind(&form.phone)
+    .bind(&form.mobile)
+    .bind(is_primary)
+    .bind(&form.notes)
+    .bind(contact_id)
+    .bind(customer_id)
+    .execute(&db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(Redirect::to(&format!("/crm/customers/{}", customer_id)))
 }

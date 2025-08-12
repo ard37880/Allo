@@ -28,28 +28,28 @@ use database::{Database, create_database_pool};
 async fn main() {
     // Load environment variables
     dotenv().ok();
-    
+
     // Initialize logging
     env_logger::init();
-    
+
     // Initialize database
     let database_url = env::var("DATABASE_URL")
         .expect("DATABASE_URL must be set");
-    
+
     let db = create_database_pool(&database_url).await
         .expect("Failed to connect to database");
-    
+
     println!("Database connection successful!");
-    
+
     // Build the application router
     let app = create_router(db);
-    
+
     // Get port from environment or use default
     let port = env::var("PORT").unwrap_or_else(|_| "3000".to_string());
     let addr = format!("0.0.0.0:{}", port);
-    
+
     println!("🚀 Allo server starting on http://{}", addr);
-    
+
     // Start the server
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
@@ -107,10 +107,10 @@ fn create_router(db: Database) -> Router {
         .route("/register", get(handlers::auth::register_page))
         .route("/register", post(handlers::auth::register))
         .route("/logout", post(handlers::auth::logout))
-        
+
         // Protected routes (authentication required)
         .route("/dashboard", get(handlers::dashboard))
-        
+
         // CRM routes
         .route("/crm", get(handlers::crm::crm_dashboard))
         .route("/crm/customers", get(handlers::crm::customers_list))
@@ -120,11 +120,13 @@ fn create_router(db: Database) -> Router {
         .route("/crm/customers/:id/edit", get(handlers::crm::customer_edit_form))
         .route("/crm/customers/:id", post(handlers::crm::update_customer))
         .route("/crm/customers/:id/delete", get(handlers::crm::delete_customer))
-        
+
         // Contacts
         .route("/crm/contacts", post(handlers::crm::create_contact))
         .route("/crm/customers/:customer_id/contacts/:contact_id/delete", get(handlers::crm::delete_contact))
-        
+        .route("/crm/customers/:customer_id/contacts/:contact_id/edit", get(handlers::crm::contact_edit_form))
+        .route("/crm/customers/:customer_id/contacts/:contact_id", post(handlers::crm::update_contact))
+
         // Deals routes
         .route("/crm/deals", get(handlers::crm::deals_list))
         .route("/crm/deals/new", get(handlers::crm::deal_form))
@@ -144,7 +146,7 @@ fn create_router(db: Database) -> Router {
 
         // Reports routes
         .route("/crm/reports", get(handlers::reports::reports_list))
-        
+
         // Team management routes
         .route("/team", get(handlers::team::team_dashboard))
         .route("/team/users", get(handlers::team::users_list))
@@ -155,7 +157,7 @@ fn create_router(db: Database) -> Router {
         .route("/team/users/:id/lock", get(handlers::team::lock_user))
         .route("/team/users/:id/unlock", get(handlers::team::unlock_user))
         .route("/team/users/:id/delete", get(handlers::team::delete_user))
-        
+
         // Roles routes
         .route("/team/roles", get(handlers::team::roles_list))
         .route("/team/roles/new", get(handlers::team::role_form))
@@ -163,13 +165,13 @@ fn create_router(db: Database) -> Router {
         .route("/team/roles/:id/edit", get(handlers::team::role_edit_form))
         .route("/team/roles/:id", post(handle_update_role)) // Use custom handler
         .route("/team/roles/:id/delete", get(handlers::team::delete_role))
-        
+
         // API routes
         .route("/api/customers/:id/contacts", get(handlers::crm::get_customer_contacts))
-        
+
         // Static files
         .nest_service("/static", ServeDir::new("static"))
-        
+
         // Middleware
         .layer(
             ServiceBuilder::new()
