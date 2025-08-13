@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}{% if item.is_some() %}Edit Item{% else %}Add Item{% endif %} - Inventory - Allo{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <nav class="bg-white shadow">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center space-x-8">
+                    <a href="/dashboard" class="text-xl font-semibold text-gray-900">Allo</a>
+                    <div class="flex space-x-4">
+                        <a href="/inventory/items" class="text-indigo-600 font-medium">Items</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
+        <form action="/inventory/items" method="POST" class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4">
+                <h3 class="text-lg font-medium leading-6 text-gray-900">{% if item.is_some() %}Edit Item{% else %}Add a New Item{% endif %}</h3>
+                <p class="mt-1 text-sm text-gray-500">Fill in the details below to add a new item to your inventory.</p>
+            </div>
+
+            <div class="p-6 border-t border-gray-200 space-y-8">
+                <div>
+                    <h4 class="text-md font-medium text-gray-900">Core Descriptors</h4>
+                    <div class="mt-4 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                        <div class="sm:col-span-3">
+                            <label for="item_name" class="block text-sm font-medium text-gray-700">Item Name *</label>
+                            <input type="text" name="item_name" id="item_name" required value="{% if let Some(i) = item %}{{ i.item_name }}{% endif %}" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                        </div>
+                        <div class="sm:col-span-3">
+                            <label for="sku" class="block text-sm font-medium text-gray-700">SKU *</label>
+                            <input type="text" name="sku" id="sku" required value="{% if let Some(i) = item %}{{ i.sku }}{% endif %}" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                        </div>
+                        <div class="sm:col-span-3">
+                            <label for="upc" class="block text-sm font-medium text-gray-700">UPC / Barcode</label>
+                            <input type="text" name="upc" id="upc" value="{% if let Some(i) = item %}{{ i.upc.as_deref().unwrap_or("") }}{% endif %}" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                        </div>
+                        <div class="sm:col-span-3">
+                            <label for="item_type" class="block text-sm font-medium text-gray-700">Item Type *</label>
+                            <select id="item_type" name="item_type" required class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 rounded-md">
+                                <option {% if item.is_some() && item.as_ref().unwrap().item_type == "Raw Materials" %}selected{% endif %}>Raw Materials</option>
+                                <option {% if item.is_some() && item.as_ref().unwrap().item_type == "Work-in-Progress (WIP)" %}selected{% endif %}>Work-in-Progress (WIP)</option>
+                                <option {% if item.is_some() && item.as_ref().unwrap().item_type == "Finished Goods" %}selected{% endif %}>Finished Goods</option>
+                                <option {% if item.is_some() && item.as_ref().unwrap().item_type == "Components / Parts" %}selected{% endif %}>Components / Parts</option>
+                                <option {% if item.is_some() && item.as_ref().unwrap().item_type == "Consumables" %}selected{% endif %}>Consumables</option>
+                                <option {% if item.is_some() && item.as_ref().unwrap().item_type == "Non-Inventory Items" %}selected{% endif %}>Non-Inventory Items</option>
+                                <option {% if item.is_some() && item.as_ref().unwrap().item_type == "Digital Goods" %}selected{% endif %}>Digital Goods</option>
+                                <option {% if item.is_some() && item.as_ref().unwrap().item_type == "MRO Items" %}selected{% endif %}>MRO Items</option>
+                            </select>
+                        </div>
+                         <div class="sm:col-span-3">
+                            <label for="category" class="block text-sm font-medium text-gray-700">Category</label>
+                            <input type="text" name="category" id="category" value="{% if let Some(i) = item %}{{ i.category.as_deref().unwrap_or("") }}{% endif %}" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                        </div>
+                         <div class="sm:col-span-3">
+                            <label for="brand" class="block text-sm font-medium text-gray-700">Brand / Manufacturer</label>
+                            <input type="text" name="brand" id="brand" value="{% if let Some(i) = item %}{{ i.brand.as_deref().unwrap_or("") }}{% endif %}" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                        </div>
+                        <div class="sm:col-span-6">
+                            <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+                            <textarea name="description" id="description" rows="3" class="mt-1 shadow-sm block w-full sm:text-sm border-gray-300 rounded-md">{% if let Some(i) = item %}{{ i.description.as_deref().unwrap_or("") }}{% endif %}</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-8 border-t">
+                    <h4 class="text-md font-medium text-gray-900">Inventory & Stock Details</h4>
+                    <div class="mt-4 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                        <div class="sm:col-span-3">
+                            <label for="reorder_point" class="block text-sm font-medium text-gray-700">Reorder Point</label>
+                            <input type="number" name="reorder_point" id="reorder_point" value="{% if let Some(i) = item %}{{ i.reorder_point }}{% endif %}" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                        </div>
+                        <div class="sm:col-span-3">
+                            <label for="preferred_stock_level" class="block text-sm font-medium text-gray-700">Preferred Stock Level</label>
+                            <input type="number" name="preferred_stock_level" id="preferred_stock_level" value="{% if let Some(i) = item %}{{ i.preferred_stock_level }}{% endif %}" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                        </div>
+                        <div class="sm:col-span-3">
+                            <label for="lead_time" class="block text-sm font-medium text-gray-700">Lead Time (days)</label>
+                            <input type="number" name="lead_time" id="lead_time" value="{% if let Some(i) = item %}{{ i.lead_time.unwrap_or(0) }}{% endif %}" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                        </div>
+                        <div class="sm:col-span-3 flex items-end">
+                            <div class="flex items-center">
+                                <input id="backorder_allowed" name="backorder_allowed" type="checkbox" {% if item.is_some() && item.as_ref().unwrap().backorder_allowed %}checked{% endif %} class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                                <label for="backorder_allowed" class="ml-2 block text-sm text-gray-900">Backorder Allowed</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-8 border-t">
+                    <h4 class="text-md font-medium text-gray-900">Sales & Financial Details</h4>
+                     <div class="mt-4 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                         <div class="sm:col-span-3">
+                             <label for="purchase_price" class="block text-sm font-medium text-gray-700">Purchase Price</label>
+                             <input type="text" name="purchase_price" id="purchase_price" value="{% if let Some(i) = item %}{% if let Some(p) = i.purchase_price %}{{ p }}{% endif %}{% endif %}" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                         </div>
+                         <div class="sm:col-span-3">
+                             <label for="selling_price" class="block text-sm font-medium text-gray-700">Selling Price</label>
+                             <input type="text" name="selling_price" id="selling_price" value="{% if let Some(i) = item %}{% if let Some(p) = i.selling_price %}{{ p }}{% endif %}{% endif %}" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                         </div>
+                     </div>
+                </div>
+
+                <div class="pt-8 border-t">
+                    <h4 class="text-md font-medium text-gray-900">Regulatory & Compliance</h4>
+                     <div class="mt-4 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                         <div class="sm:col-span-3">
+                             <label for="country_of_origin" class="block text-sm font-medium text-gray-700">Country of Origin</label>
+                             <input type="text" name="country_of_origin" id="country_of_origin" value="{% if let Some(i) = item %}{{ i.country_of_origin.as_deref().unwrap_or("") }}{% endif %}" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                         </div>
+                          <div class="sm:col-span-3">
+                             <label for="hs_code" class="block text-sm font-medium text-gray-700">Customs Tariff Code (HS Code)</label>
+                             <input type="text" name="hs_code" id="hs_code" value="{% if let Some(i) = item %}{{ i.hs_code.as_deref().unwrap_or("") }}{% endif %}" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                         </div>
+                     </div>
+                </div>
+            </div>
+
+            <div class="px-6 py-4 border-t border-gray-200">
+                <div class="flex justify-end">
+                    <a href="/inventory/items" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</a>
+                    <button type="submit" class="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">Save Item</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

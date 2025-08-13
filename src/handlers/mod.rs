@@ -4,6 +4,7 @@ pub mod reports;
 pub mod team;
 pub mod expenses;
 pub mod dashboard; 
+pub mod inventory;
 
 use axum::{
     extract::State,

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Stock Movements - Stock Management - Allo{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center space-x-8">
+                    <a href="/dashboard" class="text-xl font-semibold text-gray-900">Allo</a>
+                    <div class="flex space-x-4">
+                        <a href="/inventory/items" class="text-gray-500 hover:text-gray-700">Items</a>
+                        {% if current_user.permissions|contains("warehouses:read") %}
+                        <a href="/inventory/warehouses" class="text-gray-500 hover:text-gray-700">Warehouses</a>
+                        {% endif %}
+                        <a href="/inventory/movements" class="text-indigo-600 font-medium">Stock Movements</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">Stock Movements</h3>
+            </div>
+            <div class="p-6 text-center text-gray-500">
+                Stock movement history will be displayed here.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

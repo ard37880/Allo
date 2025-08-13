@@ -177,6 +177,12 @@ fn create_router(db: Database) -> Router {
         .route("/team/roles/:id", post(handle_update_role)) // Use custom handler
         .route("/team/roles/:id/delete", get(handlers::team::delete_role))
 
+        // Inventory routes
+        .route("/inventory", get(|| async { Redirect::permanent("/inventory/items") }))
+        .route("/inventory/items", get(handlers::inventory::items_list))
+        .route("/inventory/items/new", get(handlers::inventory::item_form))
+        .route("/inventory/items", post(handlers::inventory::create_item))
+
         // API routes
         .route("/api/customers/:id/contacts", get(handlers::crm::get_customer_contacts))
 

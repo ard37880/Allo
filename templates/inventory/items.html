@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Inventory Items - Allo{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <nav class="bg-white shadow">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center space-x-8">
+                    <a href="/dashboard" class="text-xl font-semibold text-gray-900">Allo</a>
+                    <div class="flex space-x-4">
+                        <a href="/inventory/items" class="text-indigo-600 font-medium">Items</a>
+                        </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    {% if current_user.permissions|contains("inventory:write") %}
+                    <a href="/inventory/items/new"
+                       class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700">
+                        Add Item
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">Inventory Items</h3>
+            </div>
+
+            {% if items.len() == 0 %}
+            <div class="p-6 text-center">
+                <div class="text-gray-400 text-6xl mb-4">📦</div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No items found</h3>
+                <p class="text-gray-500 mb-4">Start by adding your first inventory item.</p>
+                {% if current_user.permissions|contains("inventory:write") %}
+                <a href="/inventory/items/new"
+                   class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
+                    Add First Item
+                </a>
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Item Name
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                SKU
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Type
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for item in items %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ item.item_name }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.sku }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.item_type }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                {% if current_user.permissions|contains("inventory:write") %}
+                                <a href="/inventory/items/{{ item.id }}/edit" class="text-indigo-600 hover:text-indigo-900">Edit</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
